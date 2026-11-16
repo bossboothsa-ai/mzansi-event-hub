@@ -1,0 +1,998 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: South African event marketplace, ticketing, organiser operations and check-in API.
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+  - name: marketplace
+  - name: account
+  - name: organiser
+  - name: admin
+  - name: checkout
+  - name: tickets
+  - name: legal
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /marketplace/summary:
+    get:
+      operationId: getMarketplaceSummary
+      tags: [marketplace]
+      summary: Get marketplace highlights
+      responses:
+        "200":
+          description: Marketplace summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketplaceSummary"
+  /events:
+    get:
+      operationId: listEvents
+      tags: [marketplace]
+      summary: Search approved public events
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: city
+          schema: { type: string }
+        - in: query
+          name: category
+          schema: { type: string }
+        - in: query
+          name: from
+          schema: { type: string, format: date }
+        - in: query
+          name: to
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Matching public events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EventCard"
+  /events/{eventId}:
+    get:
+      operationId: getEvent
+      tags: [marketplace]
+      summary: Get public event details
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Event details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventDetail"
+        "404": { description: Event not found }
+  /marketplace/reports:
+    post:
+      operationId: reportEvent
+      tags: [marketplace]
+      summary: Report a suspicious event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventReportInput"
+      responses:
+        "201":
+          description: Report submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatedResponse"
+  /account/me:
+    get:
+      operationId: getCurrentAccount
+      tags: [account]
+      summary: Get the signed-in app account
+      responses:
+        "200":
+          description: Current account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentAccount"
+        "401": { description: Sign-in required }
+  /organiser/application:
+    post:
+      operationId: submitOrganiserApplication
+      tags: [organiser]
+      summary: Submit an organiser verification application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrganiserApplicationInput"
+      responses:
+        "201":
+          description: Application submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganiserApplication"
+  /organiser/dashboard:
+    get:
+      operationId: getOrganiserDashboard
+      tags: [organiser]
+      summary: Get organiser performance and onboarding status
+      responses:
+        "200":
+          description: Organiser dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganiserDashboard"
+  /organiser/events:
+    get:
+      operationId: listOrganiserEvents
+      tags: [organiser]
+      summary: List the current organiser's events
+      responses:
+        "200":
+          description: Organiser events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OrganiserEvent"
+    post:
+      operationId: createOrganiserEvent
+      tags: [organiser]
+      summary: Create an event draft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventInput"
+      responses:
+        "201":
+          description: Event draft created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganiserEvent"
+  /organiser/events/{eventId}:
+    patch:
+      operationId: updateOrganiserEvent
+      tags: [organiser]
+      summary: Update or submit an owned event
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventInput"
+      responses:
+        "200":
+          description: Updated event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganiserEvent"
+        "403": { description: Event is not editable by this organiser }
+  /organiser/events/{eventId}/sales:
+    get:
+      operationId: getOrganiserEventSales
+      tags: [organiser]
+      summary: Get sales and attendee data for an owned event
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Event sales summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventSales"
+  /organiser/events/{eventId}/staff:
+    get:
+      operationId: listEventStaff
+      tags: [organiser]
+      summary: List event staff assigned to an owned event
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Event staff assignments
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/StaffAssignment" }
+    post:
+      operationId: assignEventStaff
+      tags: [organiser]
+      summary: Assign a registered user to check in tickets
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StaffAssignmentInput" }
+      responses:
+        "201":
+          description: Event staff assigned
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffAssignment" }
+        "404": { description: Event or registered user not found }
+  /organiser/events/{eventId}/staff/{userId}:
+    delete:
+      operationId: removeEventStaff
+      tags: [organiser]
+      summary: Remove staff access from an event
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema: { type: integer }
+        - in: path
+          name: userId
+          required: true
+          schema: { type: string }
+      responses:
+        "204": { description: Staff access removed }
+  /organiser/payfast:
+    get:
+      operationId: getOrganiserPaymentSetup
+      tags: [organiser]
+      summary: Get organiser PayFast sandbox setup status
+      responses:
+        "200":
+          description: Payment setup status; no credentials are returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentSetupStatus"
+    put:
+      operationId: saveOrganiserPaymentSetup
+      tags: [organiser]
+      summary: Save organiser PayFast sandbox merchant details
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentSetupInput"
+      responses:
+        "200":
+          description: Payment setup saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentSetupStatus"
+  /organiser/documents:
+    post:
+      operationId: uploadOrganiserDocument
+      tags: [organiser]
+      summary: Upload a private organiser verification document
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/DocumentUploadInput"
+      responses:
+        "201":
+          description: Document stored privately
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentUploadResult"
+  /admin/reports:
+    get:
+      operationId: listEventReports
+      tags: [admin]
+      summary: List customer event reports
+      responses:
+        "200":
+          description: Event reports
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EventReport"
+  /admin/reports/{reportId}/decision:
+    patch:
+      operationId: decideEventReport
+      tags: [admin]
+      summary: Resolve an event report
+      parameters:
+        - in: path
+          name: reportId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportDecisionInput"
+      responses:
+        "200":
+          description: Updated event report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventReport"
+  /admin/onboarding-fee:
+    get:
+      operationId: getOnboardingFee
+      tags: [admin]
+      summary: Get the configured once-off organiser onboarding fee
+      responses:
+        "200":
+          description: Onboarding fee
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnboardingFee"
+    put:
+      operationId: setOnboardingFee
+      tags: [admin]
+      summary: Set the organiser onboarding fee in ZAR
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OnboardingFeeInput"
+      responses:
+        "200":
+          description: Updated onboarding fee
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnboardingFee"
+  /admin/onboarding-payments:
+    get:
+      operationId: listOnboardingPayments
+      tags: [admin]
+      summary: List organiser onboarding payment statuses
+      responses:
+        "200":
+          description: Onboarding payment statuses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OnboardingPayment"
+  /admin/audit-logs:
+    get:
+      operationId: listAuditLogs
+      tags: [admin]
+      summary: List recent platform audit entries
+      responses:
+        "200":
+          description: Recent audit entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditLog"
+  /admin/documents/{documentId}:
+    get:
+      operationId: downloadVerificationDocument
+      tags: [admin]
+      summary: Download a private verification document
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Private verification document
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+        "404": { description: Document not found }
+  /admin/onboarding-payments/{organiserId}:
+    patch:
+      operationId: updateOnboardingPayment
+      tags: [admin]
+      summary: Record a reconciled organiser onboarding payment status
+      parameters:
+        - in: path
+          name: organiserId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OnboardingPaymentUpdateInput" }
+      responses:
+        "200":
+          description: Updated onboarding payment record
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OnboardingPayment" }
+  /admin/dashboard:
+    get:
+      operationId: getAdminDashboard
+      tags: [admin]
+      summary: Get platform statistics and review counts
+      responses:
+        "200":
+          description: Admin dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDashboard"
+  /admin/applications:
+    get:
+      operationId: listOrganiserApplications
+      tags: [admin]
+      summary: List organiser applications for review
+      responses:
+        "200":
+          description: Organiser applications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OrganiserApplication"
+  /admin/applications/{applicationId}/decision:
+    patch:
+      operationId: decideOrganiserApplication
+      tags: [admin]
+      summary: Approve or reject an organiser application
+      parameters:
+        - in: path
+          name: applicationId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewDecisionInput"
+      responses:
+        "200":
+          description: Updated application
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganiserApplication"
+  /admin/events:
+    get:
+      operationId: listAdminEvents
+      tags: [admin]
+      summary: List events across all organisers
+      responses:
+        "200":
+          description: Admin event list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminEvent"
+  /admin/events/{eventId}/decision:
+    patch:
+      operationId: decideEvent
+      tags: [admin]
+      summary: Approve, reject, or suspend an event
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventDecisionInput"
+      responses:
+        "200":
+          description: Updated event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminEvent"
+  /checkout:
+    post:
+      operationId: createCheckout
+      tags: [checkout]
+      summary: Start a sandbox purchase with the event organiser's merchant account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutInput"
+      responses:
+        "201":
+          description: Sandbox checkout initiated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutSession"
+        "409": { description: "Event, ticket, or organiser payment setup is unavailable" }
+  /payments/payfast/itn:
+    post:
+      operationId: receivePayfastItn
+      tags: [checkout]
+      summary: Receive and verify a PayFast sandbox ITN notification
+      description: Server-side verification is required before any ticket is issued.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/PayfastItnInput"
+      responses:
+        "200": { description: Notification accepted or safely ignored }
+        "400": { description: Invalid notification }
+  /tickets:
+    get:
+      operationId: listCustomerTickets
+      tags: [tickets]
+      summary: List tickets owned by the signed-in customer
+      responses:
+        "200":
+          description: Customer tickets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Ticket"
+  /check-in/scan:
+    post:
+      operationId: scanTicket
+      tags: [tickets]
+      summary: Validate and check in a ticket for an event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckInInput"
+      responses:
+        "200":
+          description: Check-in result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckInResult"
+  /legal/{slug}:
+    get:
+      operationId: getLegalDocument
+      tags: [legal]
+      summary: Get a draft legal information page
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+            enum: [privacy, customer-terms, organiser-agreement, refunds, cancellations]
+      responses:
+        "200":
+          description: Draft legal document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LegalDocument"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    EventCard:
+      type: object
+      required: [id, title, city, venue, startsAt, category, imageUrl, minPrice, currency, organiserName, status]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        city: { type: string }
+        venue: { type: string }
+        startsAt: { type: string, format: date-time }
+        category: { type: string }
+        imageUrl: { type: ["string", "null"] }
+        minPrice: { type: number }
+        currency: { type: string, enum: [ZAR] }
+        organiserName: { type: string }
+        status: { type: string, enum: [draft, pending, approved, rejected, suspended] }
+    TicketCategory:
+      type: object
+      required: [id, name, description, price, quantityAvailable, salesStart, salesEnd]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        description: { type: string }
+        price: { type: number }
+        quantityAvailable: { type: integer }
+        salesStart: { type: ["string", "null"], format: date-time }
+        salesEnd: { type: ["string", "null"], format: date-time }
+    EventDetail:
+      allOf:
+        - $ref: "#/components/schemas/EventCard"
+        - type: object
+          required: [description, organiserVerified, ticketCategories]
+          properties:
+            description: { type: string }
+            organiserVerified: { type: boolean }
+            ticketCategories:
+              type: array
+              items: { $ref: "#/components/schemas/TicketCategory" }
+    MarketplaceSummary:
+      type: object
+      required: [events, cities, categories]
+      properties:
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/EventCard" }
+        cities:
+          type: array
+          items: { type: string }
+        categories:
+          type: array
+          items: { type: string }
+    EventReportInput:
+      type: object
+      required: [eventId, reason, details, contactEmail]
+      properties:
+        eventId: { type: integer }
+        reason: { type: string, enum: [misleading, suspicious-payment, unsafe, duplicate, other] }
+        details: { type: string, minLength: 10, maxLength: 2000 }
+        contactEmail: { type: string, format: email }
+    EventReport:
+      type: object
+      required: [id, eventId, eventTitle, reason, details, contactEmail, status, createdAt]
+      properties:
+        id: { type: integer }
+        eventId: { type: integer }
+        eventTitle: { type: string }
+        reason: { type: string }
+        details: { type: string }
+        contactEmail: { type: string, format: email }
+        status: { type: string, enum: [open, resolved, dismissed] }
+        createdAt: { type: string, format: date-time }
+    ReportDecisionInput:
+      type: object
+      required: [decision, reviewNote]
+      properties:
+        decision: { type: string, enum: [resolve, dismiss] }
+        reviewNote: { type: string, maxLength: 2000 }
+    CreatedResponse:
+      type: object
+      required: [id, status]
+      properties:
+        id: { type: integer }
+        status: { type: string }
+    CurrentAccount:
+      type: object
+      required: [id, name, email, role, organiserStatus]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string, format: email }
+        role: { type: string, enum: [customer, organiser, admin, event_staff] }
+        organiserStatus: { type: string, enum: [not_started, pending, approved, rejected, suspended] }
+        organisationName: { type: ["string", "null"] }
+    OrganiserApplicationInput:
+      type: object
+      required: [accountType, legalName, contactEmail, phone, organisationName, registrationNumber, authenticityAccepted, agreementAccepted]
+      properties:
+        accountType: { type: string, enum: [individual, business] }
+        legalName: { type: string, minLength: 2 }
+        contactEmail: { type: string, format: email }
+        phone: { type: string, minLength: 7 }
+        organisationName: { type: string, minLength: 2 }
+        registrationNumber: { type: ["string", "null"] }
+        identityDocumentPath: { type: ["string", "null"] }
+        businessDocumentPath: { type: ["string", "null"] }
+        authenticityAccepted: { type: boolean, const: true }
+        agreementAccepted: { type: boolean, const: true }
+    OrganiserApplication:
+      type: object
+      required: [id, legalName, contactEmail, organisationName, accountType, status, paymentStatus, createdAt]
+      properties:
+        id: { type: integer }
+        legalName: { type: string }
+        contactEmail: { type: string, format: email }
+        organisationName: { type: string }
+        accountType: { type: string, enum: [individual, business] }
+        registrationNumber: { type: ["string", "null"] }
+        identityDocumentPath: { type: ["string", "null"] }
+        businessDocumentPath: { type: ["string", "null"] }
+        status: { type: string, enum: [pending, approved, rejected, suspended] }
+        paymentStatus: { type: string, enum: [pending, paid, waived] }
+        reviewNote: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+    OrganiserDashboard:
+      type: object
+      required: [status, paymentStatus, eventCount, ticketsSold, revenue, events]
+      properties:
+        status: { type: string, enum: [not_started, pending, approved, rejected, suspended] }
+        paymentStatus: { type: string, enum: [not_due, pending, paid, waived] }
+        eventCount: { type: integer }
+        ticketsSold: { type: integer }
+        revenue: { type: number }
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/OrganiserEvent" }
+    EventInput:
+      type: object
+      required: [title, description, city, venue, startsAt, category, imageUrl, authenticityAccepted, ticketCategories, submitForReview]
+      properties:
+        title: { type: string, minLength: 4, maxLength: 120 }
+        description: { type: string, minLength: 20, maxLength: 8000 }
+        city: { type: string }
+        venue: { type: string }
+        startsAt: { type: string, format: date-time }
+        category: { type: string }
+        imageUrl: { type: ["string", "null"] }
+        authenticityAccepted: { type: boolean, const: true }
+        submitForReview: { type: boolean }
+        ticketCategories:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/TicketCategoryInput" }
+    TicketCategoryInput:
+      type: object
+      required: [name, description, price, quantityAvailable, salesStart, salesEnd]
+      properties:
+        name: { type: string, minLength: 1 }
+        description: { type: string }
+        price: { type: number, minimum: 0 }
+        quantityAvailable: { type: integer, minimum: 1 }
+        salesStart: { type: ["string", "null"], format: date-time }
+        salesEnd: { type: ["string", "null"], format: date-time }
+    OrganiserEvent:
+      allOf:
+        - $ref: "#/components/schemas/EventCard"
+        - type: object
+          required: [description, organiserVerified, ticketCategories]
+          properties:
+            description: { type: string }
+            organiserVerified: { type: boolean }
+            ticketCategories:
+              type: array
+              items: { $ref: "#/components/schemas/TicketCategory" }
+    EventSales:
+      type: object
+      required: [eventId, ticketsSold, grossRevenue, attendees]
+      properties:
+        eventId: { type: integer }
+        ticketsSold: { type: integer }
+        grossRevenue: { type: number }
+        attendees:
+          type: array
+          items: { $ref: "#/components/schemas/Attendee" }
+    StaffAssignmentInput:
+      type: object
+      required: [email]
+      properties:
+        email: { type: string, format: email }
+    StaffAssignment:
+      type: object
+      required: [userId, name, email, createdAt]
+      properties:
+        userId: { type: string }
+        name: { type: string }
+        email: { type: string, format: email }
+        createdAt: { type: string, format: date-time }
+    Attendee:
+      type: object
+      required: [name, email, ticketCategory, purchasedAt, checkedIn]
+      properties:
+        name: { type: string }
+        email: { type: string, format: email }
+        ticketCategory: { type: string }
+        purchasedAt: { type: string, format: date-time }
+        checkedIn: { type: boolean }
+    PaymentSetupInput:
+      type: object
+      required: [sandboxMerchantId, sandboxMerchantKey, sandboxPassphrase]
+      properties:
+        sandboxMerchantId: { type: string, minLength: 1 }
+        sandboxMerchantKey: { type: string, minLength: 1 }
+        sandboxPassphrase: { type: string, minLength: 1 }
+    PaymentSetupStatus:
+      type: object
+      required: [configured, environment, livePaymentsEnabled]
+      properties:
+        configured: { type: boolean }
+        environment: { type: string, enum: [sandbox] }
+        livePaymentsEnabled: { type: boolean, const: false }
+    DocumentUploadInput:
+      type: object
+      required: [file]
+      properties:
+        file: { type: string, format: binary }
+        kind: { type: string, enum: [identity, business] }
+    DocumentUploadResult:
+      type: object
+      required: [documentId, fileName, status]
+      properties:
+        documentId: { type: string }
+        fileName: { type: string }
+        status: { type: string, const: uploaded_private }
+    OnboardingFee:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount: { type: number }
+        currency: { type: string, enum: [ZAR] }
+    OnboardingFeeInput:
+      type: object
+      required: [amount]
+      properties:
+        amount: { type: number, minimum: 0 }
+    OnboardingPayment:
+      type: object
+      required: [organiserId, organisationName, status, amount, currency]
+      properties:
+        organiserId: { type: string }
+        organisationName: { type: string }
+        status: { type: string, enum: [pending, paid, waived] }
+        amount: { type: number }
+        currency: { type: string, enum: [ZAR] }
+    OnboardingPaymentUpdateInput:
+      type: object
+      required: [status, reconciliationNote]
+      properties:
+        status: { type: string, enum: [pending, paid, waived] }
+        reconciliationNote: { type: string, minLength: 3, maxLength: 1000 }
+    AuditLog:
+      type: object
+      required: [id, actorId, action, entityType, entityId, createdAt]
+      properties:
+        id: { type: integer }
+        actorId: { type: string }
+        action: { type: string }
+        entityType: { type: string }
+        entityId: { type: string }
+        createdAt: { type: string, format: date-time }
+    AdminDashboard:
+      type: object
+      required: [organisersPending, eventsPending, reportsOpen, organisersTotal, eventsTotal, ticketsSold]
+      properties:
+        organisersPending: { type: integer }
+        eventsPending: { type: integer }
+        reportsOpen: { type: integer }
+        organisersTotal: { type: integer }
+        eventsTotal: { type: integer }
+        ticketsSold: { type: integer }
+    ReviewDecisionInput:
+      type: object
+      required: [decision, reviewNote]
+      properties:
+        decision: { type: string, enum: [approve, reject, suspend] }
+        reviewNote: { type: string, maxLength: 2000 }
+    AdminEvent:
+      allOf:
+        - $ref: "#/components/schemas/OrganiserEvent"
+        - type: object
+          required: [organiserId, organiserName, status]
+          properties:
+            organiserId: { type: string }
+            organiserName: { type: string }
+            status: { type: string, enum: [draft, pending, approved, rejected, suspended] }
+    EventDecisionInput:
+      type: object
+      required: [decision, reviewNote]
+      properties:
+        decision: { type: string, enum: [approve, reject, suspend] }
+        reviewNote: { type: string, maxLength: 2000 }
+    CheckoutInput:
+      type: object
+      required: [eventId, ticketCategoryId, quantity]
+      properties:
+        eventId: { type: integer }
+        ticketCategoryId: { type: integer }
+        quantity: { type: integer, minimum: 1, maximum: 10 }
+    CheckoutSession:
+      type: object
+      required: [orderId, environment, redirectUrl, amount, currency]
+      properties:
+        orderId: { type: integer }
+        environment: { type: string, enum: [sandbox] }
+        redirectUrl: { type: string, format: uri }
+        amount: { type: number }
+        currency: { type: string, enum: [ZAR] }
+    PayfastItnInput:
+      type: object
+      additionalProperties: true
+      properties:
+        m_payment_id: { type: string }
+        pf_payment_id: { type: string }
+        payment_status: { type: string }
+        amount_gross: { type: string }
+        signature: { type: string }
+    Ticket:
+      type: object
+      required: [id, eventId, eventTitle, eventStartsAt, venue, category, price, qrToken, status]
+      properties:
+        id: { type: integer }
+        eventId: { type: integer }
+        eventTitle: { type: string }
+        eventStartsAt: { type: string, format: date-time }
+        venue: { type: string }
+        category: { type: string }
+        price: { type: number }
+        qrToken: { type: string }
+        status: { type: string, enum: [valid, checked_in, refunded] }
+    CheckInInput:
+      type: object
+      required: [eventId, qrToken]
+      properties:
+        eventId: { type: integer }
+        qrToken: { type: string, minLength: 16 }
+    CheckInResult:
+      type: object
+      required: [result, message, eventTitle, scannedAt]
+      properties:
+        result: { type: string, enum: [valid, invalid, already_used] }
+        message: { type: string }
+        eventTitle: { type: ["string", "null"] }
+        scannedAt: { type: ["string", "null"], format: date-time }
+    LegalDocument:
+      type: object
+      required: [slug, title, status, content]
+      properties:
+        slug: { type: string }
+        title: { type: string }
+        status: { type: string, const: draft_requires_legal_review }
+        content: { type: string }
+

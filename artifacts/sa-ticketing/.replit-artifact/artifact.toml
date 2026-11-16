@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "TicketHub South Africa"
+description = "A South African event ticket marketplace where attendees discover events and organisers manage listings, ticket sales and check-in."
+version = "1.0.0"
+id = "artifacts/sa-ticketing"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24899
+
+[services.development]
+run = "pnpm --filter @workspace/sa-ticketing run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/sa-ticketing", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/sa-ticketing/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24899"
+BASE_PATH = "/"
