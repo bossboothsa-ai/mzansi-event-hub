@@ -4,7 +4,8 @@ This guide covers running Mzansi Event Hub locally for in-house testing and depl
 
 ## Prerequisites
 
-- **Node.js** 20+ and **pnpm** 10+
+- **Node.js** 24.x (pinned via the root `package.json` `engines` field and enforced by `.npmrc` `engine-strict=true`)
+- **pnpm** 10+ (pinned via `packageManager`: `pnpm@10.32.1`)
 - **PostgreSQL** 14+ (local install or a hosted database)
 - **Resend account** (free) at [resend.com](https://resend.com) — for sending emails
 - **Render account** (free) at [render.com](https://render.com) — for deployment
@@ -174,10 +175,12 @@ Resend's free tier without a verified domain can only send emails **to your own 
 
 ## 4. Deploying to Render
 
+The production deployment is a **single Node web service** that serves both the API (`/api/*`) and the built React frontend (static assets + SPA fallback). This is cheaper and simpler than running two services, and it is what a "New → Web Service from repo" deploy produces.
+
 ### 4.1 Prepare the Repository
 
 1. Push your code to a GitHub/GitLab repository.
-2. Ensure `render.yaml` is in the root of the repository.
+2. Ensure `render.yaml`, `.npmrc`, and `pnpm-lock.yaml` are committed (they are).
 3. Ensure `.env` is in `.gitignore` (never commit secrets).
 
 ### 4.2 Create a PostgreSQL Database
@@ -185,49 +188,62 @@ Resend's free tier without a verified domain can only send emails **to your own 
 1. In the Render dashboard, create a new **PostgreSQL** database.
 2. Copy the **Internal Database URL** (e.g., `postgresql://user:pass@dpg-xxx/dbname`).
 
-### 4.3 Deploy via Blueprint
+### 4.3 Create the Web Service
 
-1. In the Render dashboard, click **New → Blueprint**.
-2. Connect your GitHub/GitLab repository.
-3. Render reads `render.yaml` and provisions:
-   - `mzansi-api` — the Express API server
-   - `mzansi-frontend` — the React static site
-4. Fill in the secret env vars when prompted:
+1. In the Render dashboard, click **New → Web Service** and connect your repository.
+2. Use these settings:
 
-| Variable | Value |
-|----------|-------|
-| `DATABASE_URL` | The Internal Database URL from step 4.2 |
-| `SESSION_SECRET` | A 32+ char random string |
-| `ADMIN_BOOTSTRAP_TOKEN` | A 32+ char random string |
-| `PAYFAST_ENCRYPTION_SECRET` | A 32+ char random string |
-| `PAYFAST_NOTIFY_URL` | `https://mzansi-api.onrender.com/api/payments/payfast/itn` |
-| `RESEND_API_KEY` | Your `re_xxx` key |
-| `WEB_ORIGIN` | `https://mzansi-frontend.onrender.com` |
+   | Setting | Value |
+   |---------|-------|
+   | Runtime | Node |
+   | Build Command | `pnpm install --frozen-lockfile && pnpm run build` |
+   | Start Command | `pnpm --filter @workspace/db run push-force && pnpm run start` |
+   | Health Check Path | `/api/healthz` |
 
-### 4.4 Apply Database Schema
+   The `push-force` step runs `drizzle-kit push --force`, which is **idempotent** — it creates the tables on a fresh database and is a fast no-op on every subsequent deploy/restart. This means you do **not** need to apply the schema manually.
 
-After the database is created, apply the schema. You can do this from the Render Shell:
+3. Add the environment variables:
 
-1. Open the `mzansi-api` service in Render.
-2. Go to the **Shell** tab.
-3. Run:
-   ```bash
-   DATABASE_URL=$DATABASE_URL pnpm --filter @workspace/db run push
-   ```
+   | Variable | Value |
+   |----------|-------|
+   | `NODE_ENV` | `production` |
+   | `DATABASE_URL` | The Internal Database URL from step 4.2 |
+   | `SESSION_SECRET` | A 32+ char random string |
+   | `ADMIN_BOOTSTRAP_TOKEN` | A 32+ char random string |
+   | `PAYFAST_ENCRYPTION_SECRET` | A 32+ char random string |
+   | `PAYFAST_NOTIFY_URL` | `https://<your-service>.onrender.com/api/payments/payfast/itn` |
+   | `RESEND_API_KEY` | Your `re_xxx` key |
+   | `EMAIL_FROM` | `Out There ZA <onboarding@resend.dev>` (or a verified domain) |
+   | `WEB_ORIGIN` | `https://<your-service>.onrender.com` |
+   | `PRIVATE_DOCUMENTS_DIR` | `/var/data/private-documents` (requires a disk, see note) |
+
+   Render injects `PORT` automatically; the server reads `process.env.PORT` and binds to `0.0.0.0`.
+
+   > **Disk note:** persistent organiser verification documents need a Render **disk** mounted at `/var/data`, which requires a paid instance. On the free plan the service still runs, but uploaded documents are lost on restart.
+
+4. Click **Create Web Service**. Render runs the build, applies the schema, and boots the server.
+
+### 4.4 (Optional) Apply Database Schema Manually
+
+The start command already applies the schema, so this is only needed if you prefer to run it yourself (e.g. from the Render **Shell** tab):
+
+```bash
+pnpm --filter @workspace/db run push-force
+```
 
 Or run it locally against the Render database's **External Database URL** (if enabled):
 
 ```bash
 $env:DATABASE_URL = "postgresql://user:pass@dpg-xxx.render.com/dbname"
-pnpm --filter @workspace/db run push
+pnpm --filter @workspace/db run push-force
 ```
 
 ### 4.5 Create the First Admin
 
-After the services are live:
+After the service is live:
 
 ```bash
-curl -X POST https://mzansi-api.onrender.com/api/auth/bootstrap-admin \
+curl -X POST https://<your-service>.onrender.com/api/auth/bootstrap-admin \
   -H "Content-Type: application/json" \
   -d '{
     "token": "YOUR_ADMIN_BOOTSTRAP_TOKEN",
@@ -239,8 +255,8 @@ curl -X POST https://mzansi-api.onrender.com/api/auth/bootstrap-admin \
 
 ### 4.6 Verify Deployment
 
-1. Check `https://mzansi-api.onrender.com/api/healthz` — should return `{"status":"ok",...}`.
-2. Open `https://mzansi-frontend.onrender.com` — should show the marketplace.
+1. Check `https://<your-service>.onrender.com/api/healthz` — should return `{"status":"ok","checks":{...}}`.
+2. Open `https://<your-service>.onrender.com` — should show the marketplace.
 3. Sign in as admin — should redirect to `/admin`.
 
 ---
@@ -334,22 +350,25 @@ Stop-Process -Id <PID> -Force
 ## 7. Architecture Overview
 
 ```
-Frontend (React + Vite)          API Server (Express)
-:8000 (local) / onrender.com     :8001 (local) / onrender.com
-    |                                  |
-    |  /api/* (proxied or rewritten)   |
-    |__________________________________|
-                                       |
-                                  PostgreSQL
-                                       |
-                              ┌────────┴────────┐
-                              │                 │
-                         Resend API        PayFast
-                         (email)           (payments)
+        Single Node web service (one process, one port)
+        ┌───────────────────────────────────────────────┐
+        │  Express app (artifacts/api-server)            │
+        │   /api/*  → API routes (business logic)         │
+        │   /*      → static React build + SPA fallback    │
+        │             (artifacts/sa-ticketing/dist/public) │
+        └───────────────────────┬───────────────────────┘
+                                │
+                          PostgreSQL
+                                │
+                    ┌───────────┴───────────┐
+                    │                       │
+              Resend API               PayFast
+              (email)                  (payments)
 ```
 
-- **Frontend**: React SPA, served as static files, proxies `/api/*` to the API server.
+- **Single service**: one Express process serves both the JSON API (`/api/*`) and the built React SPA (static assets with an `index.html` fallback for client-side routes). The frontend is built by Vite into `artifacts/sa-ticketing/dist/public` during `pnpm run build`.
+- **Local dev** runs them separately: Vite dev server on `:8000` proxies `/api/*` to the API server on `:8001`.
 - **API Server**: Express 5, handles all business logic, talks to PostgreSQL.
-- **Database**: PostgreSQL via Drizzle ORM. Schema is in `lib/db/src/schema/ticketing.ts`.
+- **Database**: PostgreSQL via Drizzle ORM. Schema is in `lib/db/src/schema/ticketing.ts`. Applied with `drizzle-kit push` (automatically on Render start).
 - **Email**: Resend API. All emails are also recorded in `ticketing_email_outbox` for admin review.
 - **Payments**: PayFast sandbox/live. Organiser credentials are encrypted with AES-256-GCM.
