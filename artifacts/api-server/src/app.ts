@@ -4,6 +4,8 @@ import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { z } from "zod";
 import router from "./routes";
 import { logger } from "./lib/logger";
@@ -56,6 +58,22 @@ const apiLimiter = rateLimit({
 app.use("/api", apiLimiter);
 
 app.use("/api", router);
+
+// Serve the built frontend (single-service deployment, e.g. Render web service).
+// The frontend build output lives at artifacts/sa-ticketing/dist/public. When that
+// directory exists we serve it as static assets and fall back to index.html for
+// client-side routing, so one process serves both the API and the SPA.
+const frontendDist = process.env.FRONTEND_DIST_DIR
+  ? path.resolve(process.env.FRONTEND_DIST_DIR)
+  : path.resolve(process.cwd(), "artifacts/sa-ticketing/dist/public");
+
+if (existsSync(path.join(frontendDist, "index.html"))) {
+  app.use(express.static(frontendDist));
+  app.use((req, res, next) => {
+    if (req.method !== "GET" || req.path.startsWith("/api")) return next();
+    res.sendFile(path.join(frontendDist, "index.html"));
+  });
+}
 
 app.use((err: unknown, _req: import("express").Request, res: import("express").Response, _next: import("express").NextFunction) => {
   if (err instanceof z.ZodError) {

@@ -1,36 +1,36 @@
 # =============================================================================
-# Mzansi Event Hub (Out There ZA) - Render Blueprint
+# Mzansi Event Hub (Out There ZA) - Render Blueprint (single web service)
 # =============================================================================
-# Deploy both the API server and the frontend static site to Render.
+# One Node web service serves BOTH the API (/api/*) and the built React
+# frontend (static + SPA fallback). This is simpler and cheaper than running
+# two services, and matches how a Render "New Web Service from repo" deploy
+# behaves.
 #
 # Usage:
-#   1. Push this repo to GitHub/GitLab.
-#   2. In Render dashboard, create a new "Blueprint" and point it at your repo.
-#   3. Render reads this file and provisions the services.
-#   4. Fill in the secret env vars (RESEND_API_KEY, SESSION_SECRET, etc.) in the
-#      Render dashboard after the services are created.
-#   5. Create a PostgreSQL database in Render and copy its Internal Database URL
-#      into the DATABASE_URL env var of the api service.
-#
-# For the frontend, Render serves the static dist/ folder and proxies /api to
-# the backend via a rewrite rule (configured in render.yaml).
+#   1. Push this repo to GitHub.
+#   2. In Render, create a PostgreSQL database and copy its Internal Database URL.
+#   3. New -> Blueprint -> connect the repo (Render reads this file), OR
+#      New -> Web Service -> point at the repo with these settings:
+#        Build Command: pnpm install --frozen-lockfile && pnpm run build
+#        Start Command: pnpm run start
+#   4. Fill in the secret env vars (marked sync:false) in the Render dashboard.
+#   5. Apply the DB schema from the Render Shell:
+#        pnpm --filter @workspace/db run push
+#   6. Bootstrap the first admin (see DEPLOYMENT.md section 4.5).
 # =============================================================================
 
 services:
-  # --- API Server (Node.js + Express) ---
   - type: web
-    name: mzansi-api
+    name: mzansi-event-hub
     runtime: node
     plan: free
-    rootDir: artifacts/api-server
-    buildCommand: pnpm install --no-frozen-lockfile && pnpm run build
+    buildCommand: pnpm install --frozen-lockfile && pnpm run build
     startCommand: pnpm run start
     healthCheckPath: /api/healthz
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 10000
+      # Render injects PORT automatically; the server reads process.env.PORT.
       - key: DATABASE_URL
         sync: false
       - key: SESSION_SECRET
@@ -53,21 +53,3 @@ services:
       name: mzansi-documents
       mountPath: /var/data
       sizeGB: 1
-
-  # --- Frontend (Static Site) ---
-  - type: web
-    name: mzansi-frontend
-    runtime: node
-    plan: free
-    rootDir: artifacts/sa-ticketing
-    buildCommand: pnpm install --no-frozen-lockfile && pnpm run build
-    startCommand: pnpm run preview
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: 10000
-    routes:
-      - type: rewrite
-        source: /api/*
-        destination: https://mzansi-api.onrender.com/api/:splat
