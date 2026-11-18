@@ -12,7 +12,11 @@ export type EventCardStatus = typeof EventCardStatus[keyof typeof EventCardStatu
 export const EventCardStatus = {
   draft: 'draft',
   pending: 'pending',
+  more_information_required: 'more_information_required',
   approved: 'approved',
+  published: 'published',
   rejected: 'rejected',
   suspended: 'suspended',
+  completed: 'completed',
+  cancelled: 'cancelled',
 } as const;

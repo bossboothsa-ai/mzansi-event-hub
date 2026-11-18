@@ -1,0 +1,153 @@
+Build a modern, professional South African event ticketing marketplace web application.
+
+The platform allows independent event organisers, artists, promoters, businesses and first-time event hosts to register, list events, sell tickets and manage ticket sales.
+
+**IMPORTANT:** Build this as a functional, modular application that can be exported and continued locally in VS Code. Use React, Vite, Node.js, Express, TypeScript, Tailwind CSS and PostgreSQL with Drizzle ORM. Do not rely on Replit-specific services for core functionality. Use environment variables for secrets and configuration.
+
+## 1. Public marketplace
+
+Create a beautiful, responsive event discovery website with:
+- Homepage featuring upcoming events.
+- Event search and filters by location, category and date.
+- Event detail pages with posters, descriptions, venues, dates and ticket prices.
+- Ticket selection and checkout.
+- Customer registration and login.
+- Customer dashboard for purchased tickets.
+- Unique QR-code tickets and downloadable ticket PDFs.
+- Clear organiser information on each event.
+- Report Suspicious Event feature.
+
+Use South African rand (ZAR) throughout.
+
+## 2. Organiser dashboard
+
+Allow organisers to:
+- Register as individuals or registered businesses.
+- Complete identity and business verification forms.
+- Upload supporting documents securely.
+- Accept the organiser agreement.
+- Submit their PayFast merchant details.
+- Create, edit and submit events for approval.
+- Create ticket categories, prices, quantities and sales periods.
+- View ticket sales, revenue and attendee lists.
+- Download sales reports.
+- Manage multiple events throughout the year.
+- View their onboarding payment status.
+
+Each organiser must have a private dashboard with a left sidebar navigation menu.
+
+Organisers cannot publish events until their account and event have been approved.
+
+## 3. Super admin dashboard
+
+Create a separate, secure super admin portal with a left sidebar.
+
+Admin functionality:
+- Review and approve organiser applications.
+- Review verification documents.
+- Approve or reject event listings.
+- View all organisers and events.
+- Suspend suspicious organisers or events.
+- Review customer complaints and fraud reports.
+- Configure the once-off organiser onboarding fee.
+- Track onboarding payments.
+- View platform statistics.
+- Maintain audit logs.
+
+Organiser and admin dashboards must have separate permissions and must not expose each other's private functionality.
+
+## 4. PayFast integration
+
+The platform must be designed so each organiser uses their own PayFast merchant account.
+
+Customers purchasing tickets for an event must be directed through the relevant organiser's approved PayFast payment integration.
+
+Do not route all event revenue through the platform owner's merchant account.
+
+Implement a secure payment abstraction with a PayFast sandbox adapter.
+
+Use server-side payment verification and PayFast ITN notifications. Never issue valid tickets based only on a checkout success redirect.
+
+Before enabling live payments, require confirmation that PayFast permits the proposed multi-merchant integration.
+
+Do not store merchant passphrases or sensitive payment credentials in browser storage or expose them to customers.
+
+For now, implement sandbox functionality and clearly mark live payments as not configured.
+
+## 5. Ticket validation
+
+Every successfully paid ticket must have a unique QR code.
+
+Create a mobile-friendly event check-in portal allowing authorised event staff to scan tickets.
+
+The system must:
+- Verify ticket authenticity.
+- Confirm the ticket belongs to the selected event.
+- Prevent duplicate check-ins.
+- Record attendance and scanning history.
+- Show clear valid, invalid and already-used results.
+
+## 6. Legal and safety
+
+Implement:
+- Mandatory organiser agreement acceptance.
+- Event authenticity declarations.
+- Privacy policy and customer terms pages.
+- Refund and cancellation policy pages.
+- Report Suspicious Event form.
+- Admin suspension controls.
+- Secure storage of verification documents.
+- Audit logs of approvals and important account changes.
+
+Organisers are responsible for their own events, representations, cancellations and refunds, subject to applicable law.
+
+Include a lawful information-disclosure clause for cooperation with law enforcement and authorised authorities.
+
+Legal documents must be clearly labelled as drafts requiring South African legal review before launch.
+
+## 7. Database and security
+
+Create persistent database tables for users, organisers, verification applications, events, ticket categories, orders, payments, tickets, check-ins, complaints, agreements and audit logs.
+
+Implement:
+- Secure authentication.
+- Role-based access control.
+- Server-side input validation.
+- Organiser-specific data isolation.
+- Secure file upload restrictions.
+- Payment notification verification.
+- Prevention of duplicate ticket issuance.
+- Environment-based configuration.
+
+## 8. Design
+
+Make the platform premium, modern and trustworthy, similar in quality to established ticketing marketplaces.
+
+Use a clean white interface, dark navy text, elegant typography, professional event cards and subtle accent colours.
+
+All portals must be responsive.
+
+Use functional left sidebar navigation for organiser and super admin dashboards.
+
+Avoid unnecessary animations and placeholder buttons.
+
+## 9. Development priorities
+
+Build in this order:
+
+1. Project architecture, database and authentication.
+2. Public event marketplace.
+3. Organiser registration and dashboard.
+4. Super admin verification and event approval.
+5. Ticket creation and ordering.
+6. PayFast sandbox integration.
+7. QR ticket issuance and check-in.
+8. Reports, complaints and legal pages.
+
+Use realistic demo events and sample accounts for testing.
+
+Do not simulate successful live payments.
+
+Make sure core workflows are functional before adding optional features.
+
+**Important:** Keep the code clean, modular, documented and portable so I can download the project and continue development in VS Code without rebuilding it.

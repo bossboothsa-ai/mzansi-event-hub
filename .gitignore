@@ -35,6 +35,10 @@ node_modules
 
 # misc
 /.sass-cache
+.env
+.env.*
+!.env.example
+/artifacts/api-server/private-documents/
 /connect.lock
 /coverage
 /libpeerconnection.log

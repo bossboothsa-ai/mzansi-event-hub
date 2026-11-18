@@ -13,6 +13,8 @@ export interface OrganiserApplication {
   id: number;
   legalName: string;
   contactEmail: string;
+  phone?: string;
+  city?: string;
   organisationName: string;
   accountType: OrganiserApplicationAccountType;
   /** @nullable */

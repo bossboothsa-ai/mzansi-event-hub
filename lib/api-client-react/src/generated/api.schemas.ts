@@ -22,9 +22,13 @@ export type EventCardStatus = typeof EventCardStatus[keyof typeof EventCardStatu
 export const EventCardStatus = {
   draft: 'draft',
   pending: 'pending',
+  more_information_required: 'more_information_required',
   approved: 'approved',
+  published: 'published',
   rejected: 'rejected',
   suspended: 'suspended',
+  completed: 'completed',
+  cancelled: 'cancelled',
 } as const;
 
 export interface EventCard {
@@ -127,6 +131,33 @@ export interface CreatedResponse {
   status: string;
 }
 
+export interface RegisterAccountInput {
+  /**
+     * @minLength 2
+     * @maxLength 120
+     */
+  name: string;
+  email: string;
+  /**
+     * @minLength 8
+     * @maxLength 128
+     */
+  password: string;
+}
+
+export interface SignInAccountInput {
+  email: string;
+  /**
+     * @minLength 8
+     * @maxLength 128
+     */
+  password: string;
+}
+
+export interface AccountPreferencesInput {
+  marketingConsent: boolean;
+}
+
 export type CurrentAccountRole = typeof CurrentAccountRole[keyof typeof CurrentAccountRole];
 
 
@@ -156,6 +187,7 @@ export interface CurrentAccount {
   organiserStatus: CurrentAccountOrganiserStatus;
   /** @nullable */
   organisationName?: string | null;
+  marketingConsent?: boolean;
 }
 
 export type OrganiserApplicationInputAccountType = typeof OrganiserApplicationInputAccountType[keyof typeof OrganiserApplicationInputAccountType];
@@ -175,6 +207,8 @@ export interface OrganiserApplicationInput {
   phone: string;
   /** @minLength 2 */
   organisationName: string;
+  /** @minLength 2 */
+  city: string;
   /** @nullable */
   registrationNumber: string | null;
   /** @nullable */
@@ -198,6 +232,7 @@ export type OrganiserApplicationStatus = typeof OrganiserApplicationStatus[keyof
 
 export const OrganiserApplicationStatus = {
   pending: 'pending',
+  more_information_required: 'more_information_required',
   approved: 'approved',
   rejected: 'rejected',
   suspended: 'suspended',
@@ -216,6 +251,8 @@ export interface OrganiserApplication {
   id: number;
   legalName: string;
   contactEmail: string;
+  phone?: string;
+  city?: string;
   organisationName: string;
   accountType: OrganiserApplicationAccountType;
   /** @nullable */
@@ -298,7 +335,8 @@ export interface EventInput {
   category: string;
   /** @nullable */
   imageUrl: string | null;
-  authenticityAccepted: true;
+  authenticityAccepted: boolean;
+  organiserTermsAccepted: boolean;
   submitForReview: boolean;
   /** @minItems 1 */
   ticketCategories: TicketCategoryInput[];
@@ -317,6 +355,69 @@ export interface EventSales {
   ticketsSold: number;
   grossRevenue: number;
   attendees: Attendee[];
+}
+
+export type EventCommunicationInputCategory = typeof EventCommunicationInputCategory[keyof typeof EventCommunicationInputCategory];
+
+
+export const EventCommunicationInputCategory = {
+  Ticket_confirmation: 'Ticket confirmation',
+  Event_announcement: 'Event announcement',
+  Venue_changes: 'Venue changes',
+  Event_postponement: 'Event postponement',
+  Event_cancellation: 'Event cancellation',
+  'Event-day_reminders': 'Event-day reminders',
+  General_customer_communication: 'General customer communication',
+  Marketing_update: 'Marketing update',
+} as const;
+
+export type EventCommunicationInputAudience = typeof EventCommunicationInputAudience[keyof typeof EventCommunicationInputAudience];
+
+
+export const EventCommunicationInputAudience = {
+  All_ticket_holders: 'All ticket holders',
+  VIP_ticket_holders: 'VIP ticket holders',
+  General_ticket_holders: 'General ticket holders',
+  Specific_customers: 'Specific customers',
+} as const;
+
+export interface EventCommunicationInput {
+  category: EventCommunicationInputCategory;
+  audience: EventCommunicationInputAudience;
+  customerIds?: string[];
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  subject: string;
+  /**
+     * @minLength 1
+     * @maxLength 10000
+     */
+  content: string;
+}
+
+export type EventCommunicationStatus = typeof EventCommunicationStatus[keyof typeof EventCommunicationStatus];
+
+
+export const EventCommunicationStatus = {
+  queued: 'queued',
+  sending: 'sending',
+  sent: 'sent',
+  failed: 'failed',
+} as const;
+
+export interface EventCommunication {
+  id: number;
+  eventId: number;
+  category: string;
+  audience: string;
+  subject: string;
+  content: string;
+  recipientCount: number;
+  transactional: boolean;
+  status: EventCommunicationStatus;
+  createdAt: string;
 }
 
 export interface StaffAssignmentInput {
@@ -425,9 +526,11 @@ export interface OnboardingPaymentUpdateInput {
   status: OnboardingPaymentUpdateInputStatus;
   /**
      * @minLength 3
-     * @maxLength 1000
+     * @maxLength 160
      */
-  reconciliationNote: string;
+  reconciliationReference: string;
+  /** @maxLength 1000 */
+  note?: string;
 }
 
 export interface AuditLog {
@@ -455,6 +558,7 @@ export const ReviewDecisionInputDecision = {
   approve: 'approve',
   reject: 'reject',
   suspend: 'suspend',
+  request_information: 'request_information',
 } as const;
 
 export interface ReviewDecisionInput {
@@ -469,9 +573,13 @@ export type AdminEventStatus = typeof AdminEventStatus[keyof typeof AdminEventSt
 export const AdminEventStatus = {
   draft: 'draft',
   pending: 'pending',
+  more_information_required: 'more_information_required',
   approved: 'approved',
+  published: 'published',
   rejected: 'rejected',
   suspended: 'suspended',
+  completed: 'completed',
+  cancelled: 'cancelled',
 } as const;
 
 export type AdminEvent = OrganiserEvent & {
@@ -485,8 +593,11 @@ export type EventDecisionInputDecision = typeof EventDecisionInputDecision[keyof
 
 export const EventDecisionInputDecision = {
   approve: 'approve',
+  publish: 'publish',
   reject: 'reject',
+  request_information: 'request_information',
   suspend: 'suspend',
+  restore: 'restore',
 } as const;
 
 export interface EventDecisionInput {

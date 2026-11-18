@@ -11,7 +11,9 @@ export interface OnboardingPaymentUpdateInput {
   status: OnboardingPaymentUpdateInputStatus;
   /**
      * @minLength 3
-     * @maxLength 1000
+     * @maxLength 160
      */
-  reconciliationNote: string;
+  reconciliationReference: string;
+  /** @maxLength 1000 */
+  note?: string;
 }

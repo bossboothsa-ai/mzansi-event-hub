@@ -12,9 +12,49 @@ import * as zod from 'zod';
  * Returns server health status
  * @summary Health check
  */
-export const HealthCheckResponse = zod.object({
-  "status": zod.string()
+export const HealthCheckResponse = zod.unknown()
+
+
+/**
+ * @summary Create a customer account
+ */
+export const registerAccountBodyNameMin = 2;
+export const registerAccountBodyNameMax = 120;
+
+export const registerAccountBodyPasswordMin = 8;
+export const registerAccountBodyPasswordMax = 128;
+
+
+
+export const RegisterAccountBody = zod.object({
+  "name": zod.string().min(registerAccountBodyNameMin).max(registerAccountBodyNameMax),
+  "email": zod.string().email(),
+  "password": zod.string().min(registerAccountBodyPasswordMin).max(registerAccountBodyPasswordMax)
 })
+
+export const RegisterAccountResponse = zod.void()
+
+
+/**
+ * @summary Sign in to an account
+ */
+export const signInAccountBodyPasswordMin = 8;
+export const signInAccountBodyPasswordMax = 128;
+
+
+
+export const SignInAccountBody = zod.object({
+  "email": zod.string().email(),
+  "password": zod.string().min(signInAccountBodyPasswordMin).max(signInAccountBodyPasswordMax)
+})
+
+export const SignInAccountResponse = zod.unknown()
+
+
+/**
+ * @summary Sign out and revoke the current session
+ */
+export const SignOutAccountResponse = zod.void()
 
 
 /**
@@ -32,7 +72,7 @@ export const GetMarketplaceSummaryResponse = zod.object({
   "minPrice": zod.number(),
   "currency": zod.enum(['ZAR']),
   "organiserName": zod.string(),
-  "status": zod.enum(['draft', 'pending', 'approved', 'rejected', 'suspended'])
+  "status": zod.enum(['draft', 'pending', 'more_information_required', 'approved', 'published', 'rejected', 'suspended', 'completed', 'cancelled'])
 })),
   "cities": zod.array(zod.string()),
   "categories": zod.array(zod.string())
@@ -61,7 +101,7 @@ export const ListEventsResponseItem = zod.object({
   "minPrice": zod.number(),
   "currency": zod.enum(['ZAR']),
   "organiserName": zod.string(),
-  "status": zod.enum(['draft', 'pending', 'approved', 'rejected', 'suspended'])
+  "status": zod.enum(['draft', 'pending', 'more_information_required', 'approved', 'published', 'rejected', 'suspended', 'completed', 'cancelled'])
 })
 export const ListEventsResponse = zod.array(ListEventsResponseItem)
 
@@ -84,7 +124,7 @@ export const GetEventResponse = zod.object({
   "minPrice": zod.number(),
   "currency": zod.enum(['ZAR']),
   "organiserName": zod.string(),
-  "status": zod.enum(['draft', 'pending', 'approved', 'rejected', 'suspended'])
+  "status": zod.enum(['draft', 'pending', 'more_information_required', 'approved', 'published', 'rejected', 'suspended', 'completed', 'cancelled'])
 }).and(zod.object({
   "description": zod.string(),
   "organiserVerified": zod.boolean(),
@@ -130,7 +170,39 @@ export const GetCurrentAccountResponse = zod.object({
   "email": zod.string().email(),
   "role": zod.enum(['customer', 'organiser', 'admin', 'event_staff']),
   "organiserStatus": zod.enum(['not_started', 'pending', 'approved', 'rejected', 'suspended']),
-  "organisationName": zod.string().nullish()
+  "organisationName": zod.string().nullish(),
+  "marketingConsent": zod.boolean().optional()
+})
+
+
+/**
+ * @summary Update customer marketing consent
+ */
+export const UpdateAccountPreferencesBody = zod.object({
+  "marketingConsent": zod.boolean()
+})
+
+export const UpdateAccountPreferencesResponse = zod.unknown()
+
+
+/**
+ * @summary Get the signed-in organiser application and review status
+ */
+export const GetOrganiserApplicationResponse = zod.object({
+  "id": zod.number().int(),
+  "legalName": zod.string(),
+  "contactEmail": zod.string().email(),
+  "phone": zod.string().optional(),
+  "city": zod.string().optional(),
+  "organisationName": zod.string(),
+  "accountType": zod.enum(['individual', 'business']),
+  "registrationNumber": zod.string().nullish(),
+  "identityDocumentPath": zod.string().nullish(),
+  "businessDocumentPath": zod.string().nullish(),
+  "status": zod.enum(['pending', 'more_information_required', 'approved', 'rejected', 'suspended']),
+  "paymentStatus": zod.enum(['pending', 'paid', 'waived']),
+  "reviewNote": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
 })
 
 
@@ -143,6 +215,8 @@ export const submitOrganiserApplicationBodyPhoneMin = 7;
 
 export const submitOrganiserApplicationBodyOrganisationNameMin = 2;
 
+export const submitOrganiserApplicationBodyCityMin = 2;
+
 
 
 export const SubmitOrganiserApplicationBody = zod.object({
@@ -151,6 +225,7 @@ export const SubmitOrganiserApplicationBody = zod.object({
   "contactEmail": zod.string().email(),
   "phone": zod.string().min(submitOrganiserApplicationBodyPhoneMin),
   "organisationName": zod.string().min(submitOrganiserApplicationBodyOrganisationNameMin),
+  "city": zod.string().min(submitOrganiserApplicationBodyCityMin),
   "registrationNumber": zod.string().nullable(),
   "identityDocumentPath": zod.string().nullish(),
   "businessDocumentPath": zod.string().nullish(),
@@ -162,12 +237,14 @@ export const SubmitOrganiserApplicationResponse = zod.object({
   "id": zod.number().int(),
   "legalName": zod.string(),
   "contactEmail": zod.string().email(),
+  "phone": zod.string().optional(),
+  "city": zod.string().optional(),
   "organisationName": zod.string(),
   "accountType": zod.enum(['individual', 'business']),
   "registrationNumber": zod.string().nullish(),
   "identityDocumentPath": zod.string().nullish(),
   "businessDocumentPath": zod.string().nullish(),
-  "status": zod.enum(['pending', 'approved', 'rejected', 'suspended']),
+  "status": zod.enum(['pending', 'more_information_required', 'approved', 'rejected', 'suspended']),
   "paymentStatus": zod.enum(['pending', 'paid', 'waived']),
   "reviewNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
@@ -194,7 +271,7 @@ export const GetOrganiserDashboardResponse = zod.object({
   "minPrice": zod.number(),
   "currency": zod.enum(['ZAR']),
   "organiserName": zod.string(),
-  "status": zod.enum(['draft', 'pending', 'approved', 'rejected', 'suspended'])
+  "status": zod.enum(['draft', 'pending', 'more_information_required', 'approved', 'published', 'rejected', 'suspended', 'completed', 'cancelled'])
 }).and(zod.object({
   "description": zod.string(),
   "organiserVerified": zod.boolean(),
@@ -225,7 +302,7 @@ export const ListOrganiserEventsResponseItem = zod.object({
   "minPrice": zod.number(),
   "currency": zod.enum(['ZAR']),
   "organiserName": zod.string(),
-  "status": zod.enum(['draft', 'pending', 'approved', 'rejected', 'suspended'])
+  "status": zod.enum(['draft', 'pending', 'more_information_required', 'approved', 'published', 'rejected', 'suspended', 'completed', 'cancelled'])
 }).and(zod.object({
   "description": zod.string(),
   "organiserVerified": zod.boolean(),
@@ -266,7 +343,8 @@ export const CreateOrganiserEventBody = zod.object({
   "startsAt": zod.coerce.date(),
   "category": zod.string(),
   "imageUrl": zod.string().nullable(),
-  "authenticityAccepted": zod.literal(true),
+  "authenticityAccepted": zod.boolean(),
+  "organiserTermsAccepted": zod.boolean(),
   "submitForReview": zod.boolean(),
   "ticketCategories": zod.array(zod.object({
   "name": zod.string().min(1),
@@ -289,7 +367,7 @@ export const CreateOrganiserEventResponse = zod.object({
   "minPrice": zod.number(),
   "currency": zod.enum(['ZAR']),
   "organiserName": zod.string(),
-  "status": zod.enum(['draft', 'pending', 'approved', 'rejected', 'suspended'])
+  "status": zod.enum(['draft', 'pending', 'more_information_required', 'approved', 'published', 'rejected', 'suspended', 'completed', 'cancelled'])
 }).and(zod.object({
   "description": zod.string(),
   "organiserVerified": zod.boolean(),
@@ -333,7 +411,8 @@ export const UpdateOrganiserEventBody = zod.object({
   "startsAt": zod.coerce.date(),
   "category": zod.string(),
   "imageUrl": zod.string().nullable(),
-  "authenticityAccepted": zod.literal(true),
+  "authenticityAccepted": zod.boolean(),
+  "organiserTermsAccepted": zod.boolean(),
   "submitForReview": zod.boolean(),
   "ticketCategories": zod.array(zod.object({
   "name": zod.string().min(1),
@@ -356,7 +435,7 @@ export const UpdateOrganiserEventResponse = zod.object({
   "minPrice": zod.number(),
   "currency": zod.enum(['ZAR']),
   "organiserName": zod.string(),
-  "status": zod.enum(['draft', 'pending', 'approved', 'rejected', 'suspended'])
+  "status": zod.enum(['draft', 'pending', 'more_information_required', 'approved', 'published', 'rejected', 'suspended', 'completed', 'cancelled'])
 }).and(zod.object({
   "description": zod.string(),
   "organiserVerified": zod.boolean(),
@@ -391,6 +470,68 @@ export const GetOrganiserEventSalesResponse = zod.object({
   "checkedIn": zod.boolean()
 }))
 })
+
+
+/**
+ * @summary List communications for an owned event
+ */
+export const ListEventCommunicationsParams = zod.object({
+  "eventId": zod.coerce.number().int()
+})
+
+export const ListEventCommunicationsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "eventId": zod.number().int(),
+  "category": zod.string(),
+  "audience": zod.string(),
+  "subject": zod.string(),
+  "content": zod.string(),
+  "recipientCount": zod.number().int(),
+  "transactional": zod.boolean(),
+  "status": zod.enum(['queued', 'sending', 'sent', 'failed']),
+  "createdAt": zod.coerce.date()
+})
+export const ListEventCommunicationsResponse = zod.array(ListEventCommunicationsResponseItem)
+
+
+/**
+ * @summary Queue an event communication for eligible ticket holders
+ */
+export const CreateEventCommunicationParams = zod.object({
+  "eventId": zod.coerce.number().int()
+})
+
+export const createEventCommunicationBodySubjectMax = 200;
+
+export const createEventCommunicationBodyContentMax = 10000;
+
+
+
+export const CreateEventCommunicationBody = zod.object({
+  "category": zod.enum(['Ticket confirmation', 'Event announcement', 'Venue changes', 'Event postponement', 'Event cancellation', 'Event-day reminders', 'General customer communication', 'Marketing update']),
+  "audience": zod.enum(['All ticket holders', 'VIP ticket holders', 'General ticket holders', 'Specific customers']),
+  "customerIds": zod.array(zod.string().uuid()).optional(),
+  "subject": zod.string().min(1).max(createEventCommunicationBodySubjectMax),
+  "content": zod.string().min(1).max(createEventCommunicationBodyContentMax)
+})
+
+export const CreateEventCommunicationResponse = zod.void()
+
+
+/**
+ * @summary List recent check-ins for an event
+ */
+export const ListEventCheckInsParams = zod.object({
+  "eventId": zod.coerce.number().int()
+})
+
+export const ListEventCheckInsResponse = zod.unknown()
+
+
+/**
+ * @summary List events available to the signed-in event staff member
+ */
+export const ListAssignedStaffEventsResponse = zod.unknown()
 
 
 /**
@@ -599,14 +740,17 @@ export const UpdateOnboardingPaymentParams = zod.object({
   "organiserId": zod.coerce.string()
 })
 
-export const updateOnboardingPaymentBodyReconciliationNoteMin = 3;
-export const updateOnboardingPaymentBodyReconciliationNoteMax = 1000;
+export const updateOnboardingPaymentBodyReconciliationReferenceMin = 3;
+export const updateOnboardingPaymentBodyReconciliationReferenceMax = 160;
+
+export const updateOnboardingPaymentBodyNoteMax = 1000;
 
 
 
 export const UpdateOnboardingPaymentBody = zod.object({
   "status": zod.enum(['pending', 'paid', 'waived']),
-  "reconciliationNote": zod.string().min(updateOnboardingPaymentBodyReconciliationNoteMin).max(updateOnboardingPaymentBodyReconciliationNoteMax)
+  "reconciliationReference": zod.string().min(updateOnboardingPaymentBodyReconciliationReferenceMin).max(updateOnboardingPaymentBodyReconciliationReferenceMax),
+  "note": zod.string().max(updateOnboardingPaymentBodyNoteMax).optional()
 })
 
 export const UpdateOnboardingPaymentResponse = zod.object({
@@ -638,12 +782,14 @@ export const ListOrganiserApplicationsResponseItem = zod.object({
   "id": zod.number().int(),
   "legalName": zod.string(),
   "contactEmail": zod.string().email(),
+  "phone": zod.string().optional(),
+  "city": zod.string().optional(),
   "organisationName": zod.string(),
   "accountType": zod.enum(['individual', 'business']),
   "registrationNumber": zod.string().nullish(),
   "identityDocumentPath": zod.string().nullish(),
   "businessDocumentPath": zod.string().nullish(),
-  "status": zod.enum(['pending', 'approved', 'rejected', 'suspended']),
+  "status": zod.enum(['pending', 'more_information_required', 'approved', 'rejected', 'suspended']),
   "paymentStatus": zod.enum(['pending', 'paid', 'waived']),
   "reviewNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
@@ -663,7 +809,7 @@ export const decideOrganiserApplicationBodyReviewNoteMax = 2000;
 
 
 export const DecideOrganiserApplicationBody = zod.object({
-  "decision": zod.enum(['approve', 'reject', 'suspend']),
+  "decision": zod.enum(['approve', 'reject', 'suspend', 'request_information']),
   "reviewNote": zod.string().max(decideOrganiserApplicationBodyReviewNoteMax)
 })
 
@@ -671,12 +817,14 @@ export const DecideOrganiserApplicationResponse = zod.object({
   "id": zod.number().int(),
   "legalName": zod.string(),
   "contactEmail": zod.string().email(),
+  "phone": zod.string().optional(),
+  "city": zod.string().optional(),
   "organisationName": zod.string(),
   "accountType": zod.enum(['individual', 'business']),
   "registrationNumber": zod.string().nullish(),
   "identityDocumentPath": zod.string().nullish(),
   "businessDocumentPath": zod.string().nullish(),
-  "status": zod.enum(['pending', 'approved', 'rejected', 'suspended']),
+  "status": zod.enum(['pending', 'more_information_required', 'approved', 'rejected', 'suspended']),
   "paymentStatus": zod.enum(['pending', 'paid', 'waived']),
   "reviewNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
@@ -697,7 +845,7 @@ export const ListAdminEventsResponseItem = zod.object({
   "minPrice": zod.number(),
   "currency": zod.enum(['ZAR']),
   "organiserName": zod.string(),
-  "status": zod.enum(['draft', 'pending', 'approved', 'rejected', 'suspended'])
+  "status": zod.enum(['draft', 'pending', 'more_information_required', 'approved', 'published', 'rejected', 'suspended', 'completed', 'cancelled'])
 }).and(zod.object({
   "description": zod.string(),
   "organiserVerified": zod.boolean(),
@@ -713,7 +861,7 @@ export const ListAdminEventsResponseItem = zod.object({
 })).and(zod.object({
   "organiserId": zod.string(),
   "organiserName": zod.string(),
-  "status": zod.enum(['draft', 'pending', 'approved', 'rejected', 'suspended'])
+  "status": zod.enum(['draft', 'pending', 'more_information_required', 'approved', 'published', 'rejected', 'suspended', 'completed', 'cancelled'])
 }))
 export const ListAdminEventsResponse = zod.array(ListAdminEventsResponseItem)
 
@@ -730,7 +878,7 @@ export const decideEventBodyReviewNoteMax = 2000;
 
 
 export const DecideEventBody = zod.object({
-  "decision": zod.enum(['approve', 'reject', 'suspend']),
+  "decision": zod.enum(['approve', 'publish', 'reject', 'request_information', 'suspend', 'restore']),
   "reviewNote": zod.string().max(decideEventBodyReviewNoteMax)
 })
 
@@ -745,7 +893,7 @@ export const DecideEventResponse = zod.object({
   "minPrice": zod.number(),
   "currency": zod.enum(['ZAR']),
   "organiserName": zod.string(),
-  "status": zod.enum(['draft', 'pending', 'approved', 'rejected', 'suspended'])
+  "status": zod.enum(['draft', 'pending', 'more_information_required', 'approved', 'published', 'rejected', 'suspended', 'completed', 'cancelled'])
 }).and(zod.object({
   "description": zod.string(),
   "organiserVerified": zod.boolean(),
@@ -761,7 +909,7 @@ export const DecideEventResponse = zod.object({
 })).and(zod.object({
   "organiserId": zod.string(),
   "organiserName": zod.string(),
-  "status": zod.enum(['draft', 'pending', 'approved', 'rejected', 'suspended'])
+  "status": zod.enum(['draft', 'pending', 'more_information_required', 'approved', 'published', 'rejected', 'suspended', 'completed', 'cancelled'])
 }))
 
 

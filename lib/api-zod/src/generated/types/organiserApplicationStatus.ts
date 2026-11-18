@@ -11,6 +11,7 @@ export type OrganiserApplicationStatus = typeof OrganiserApplicationStatus[keyof
 
 export const OrganiserApplicationStatus = {
   pending: 'pending',
+  more_information_required: 'more_information_required',
   approved: 'approved',
   rejected: 'rejected',
   suspended: 'suspended',

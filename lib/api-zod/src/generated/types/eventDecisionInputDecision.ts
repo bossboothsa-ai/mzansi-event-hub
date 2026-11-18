@@ -11,6 +11,9 @@ export type EventDecisionInputDecision = typeof EventDecisionInputDecision[keyof
 
 export const EventDecisionInputDecision = {
   approve: 'approve',
+  publish: 'publish',
   reject: 'reject',
+  request_information: 'request_information',
   suspend: 'suspend',
+  restore: 'restore',
 } as const;

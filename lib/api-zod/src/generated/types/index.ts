@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './accountPreferencesInput';
 export * from './adminDashboard';
 export * from './adminEvent';
 export * from './adminEventStatus';
@@ -28,6 +29,11 @@ export * from './documentUploadResult';
 export * from './eventCard';
 export * from './eventCardCurrency';
 export * from './eventCardStatus';
+export * from './eventCommunication';
+export * from './eventCommunicationInput';
+export * from './eventCommunicationInputAudience';
+export * from './eventCommunicationInputCategory';
+export * from './eventCommunicationStatus';
 export * from './eventDecisionInput';
 export * from './eventDecisionInputDecision';
 export * from './eventDetail';
@@ -63,10 +69,12 @@ export * from './payfastItnInput';
 export * from './paymentSetupInput';
 export * from './paymentSetupStatus';
 export * from './paymentSetupStatusEnvironment';
+export * from './registerAccountInput';
 export * from './reportDecisionInput';
 export * from './reportDecisionInputDecision';
 export * from './reviewDecisionInput';
 export * from './reviewDecisionInputDecision';
+export * from './signInAccountInput';
 export * from './staffAssignment';
 export * from './staffAssignmentInput';
 export * from './ticket';

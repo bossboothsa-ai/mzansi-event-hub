@@ -12,7 +12,11 @@ export type AdminEventStatus = typeof AdminEventStatus[keyof typeof AdminEventSt
 export const AdminEventStatus = {
   draft: 'draft',
   pending: 'pending',
+  more_information_required: 'more_information_required',
   approved: 'approved',
+  published: 'published',
   rejected: 'rejected',
   suspended: 'suspended',
+  completed: 'completed',
+  cancelled: 'cancelled',
 } as const;

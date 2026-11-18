@@ -13,4 +13,5 @@ export const ReviewDecisionInputDecision = {
   approve: 'approve',
   reject: 'reject',
   suspend: 'suspend',
+  request_information: 'request_information',
 } as const;

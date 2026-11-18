@@ -16,4 +16,5 @@ export interface CurrentAccount {
   organiserStatus: CurrentAccountOrganiserStatus;
   /** @nullable */
   organisationName?: string | null;
+  marketingConsent?: boolean;
 }

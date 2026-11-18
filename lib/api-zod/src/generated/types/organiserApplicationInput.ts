@@ -16,6 +16,8 @@ export interface OrganiserApplicationInput {
   phone: string;
   /** @minLength 2 */
   organisationName: string;
+  /** @minLength 2 */
+  city: string;
   /** @nullable */
   registrationNumber: string | null;
   /** @nullable */

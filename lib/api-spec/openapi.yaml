@@ -9,6 +9,7 @@ servers:
     description: Base API path
 tags:
   - name: health
+  - name: auth
   - name: marketplace
   - name: account
   - name: organiser
@@ -26,10 +27,39 @@ paths:
       responses:
         "200":
           description: Healthy
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/HealthStatus"
+  /auth/register:
+    post:
+      operationId: registerAccount
+      tags: [auth]
+      summary: Create a customer account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RegisterAccountInput" }
+      responses:
+        "201": { description: Account created and signed in }
+        "409": { description: Email already registered }
+  /auth/login:
+    post:
+      operationId: signInAccount
+      tags: [auth]
+      summary: Sign in to an account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SignInAccountInput" }
+      responses:
+        "200": { description: Signed in }
+        "401": { description: Invalid credentials }
+  /auth/logout:
+    post:
+      operationId: signOutAccount
+      tags: [auth]
+      summary: Sign out and revoke the current session
+      responses:
+        "204": { description: Signed out }
   /marketplace/summary:
     get:
       operationId: getMarketplaceSummary
@@ -121,7 +151,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/CurrentAccount"
         "401": { description: Sign-in required }
+  /account/preferences:
+    patch:
+      operationId: updateAccountPreferences
+      tags: [account]
+      summary: Update customer marketing consent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AccountPreferencesInput" }
+      responses:
+        "200": { description: Preferences updated }
   /organiser/application:
+    get:
+      operationId: getOrganiserApplication
+      tags: [organiser]
+      summary: Get the signed-in organiser application and review status
+      responses:
+        "200":
+          description: Organiser application
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganiserApplication"
+        "404": { description: No application has been submitted }
     post:
       operationId: submitOrganiserApplication
       tags: [organiser]
@@ -223,6 +277,57 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/EventSales"
+  /organiser/events/{eventId}/communications:
+    get:
+      operationId: listEventCommunications
+      tags: [organiser]
+      summary: List communications for an owned event
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Event communications
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/EventCommunication" } }
+    post:
+      operationId: createEventCommunication
+      tags: [organiser]
+      summary: Queue an event communication for eligible ticket holders
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EventCommunicationInput" }
+      responses:
+        "201": { description: Communication queued }
+  /organiser/events/{eventId}/check-ins:
+    get:
+      operationId: listEventCheckIns
+      tags: [organiser, tickets]
+      summary: List recent check-ins for an event
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: Event check-in history }
+  /staff/events:
+    get:
+      operationId: listAssignedStaffEvents
+      tags: [tickets]
+      summary: List events available to the signed-in event staff member
+      responses:
+        "200": { description: Assigned events }
   /organiser/events/{eventId}/staff:
     get:
       operationId: listEventStaff
@@ -651,7 +756,7 @@ components:
         minPrice: { type: number }
         currency: { type: string, enum: [ZAR] }
         organiserName: { type: string }
-        status: { type: string, enum: [draft, pending, approved, rejected, suspended] }
+        status: { type: string, enum: [draft, pending, more_information_required, approved, published, rejected, suspended, completed, cancelled] }
     TicketCategory:
       type: object
       required: [id, name, description, price, quantityAvailable, salesStart, salesEnd]
@@ -719,6 +824,24 @@ components:
       properties:
         id: { type: integer }
         status: { type: string }
+    RegisterAccountInput:
+      type: object
+      required: [name, email, password]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 120 }
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8, maxLength: 128 }
+    SignInAccountInput:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8, maxLength: 128 }
+    AccountPreferencesInput:
+      type: object
+      required: [marketingConsent]
+      properties:
+        marketingConsent: { type: boolean }
     CurrentAccount:
       type: object
       required: [id, name, email, role, organiserStatus]
@@ -729,15 +852,17 @@ components:
         role: { type: string, enum: [customer, organiser, admin, event_staff] }
         organiserStatus: { type: string, enum: [not_started, pending, approved, rejected, suspended] }
         organisationName: { type: ["string", "null"] }
+        marketingConsent: { type: boolean }
     OrganiserApplicationInput:
       type: object
-      required: [accountType, legalName, contactEmail, phone, organisationName, registrationNumber, authenticityAccepted, agreementAccepted]
+      required: [accountType, legalName, contactEmail, phone, organisationName, city, registrationNumber, authenticityAccepted, agreementAccepted]
       properties:
         accountType: { type: string, enum: [individual, business] }
         legalName: { type: string, minLength: 2 }
         contactEmail: { type: string, format: email }
         phone: { type: string, minLength: 7 }
         organisationName: { type: string, minLength: 2 }
+        city: { type: string, minLength: 2 }
         registrationNumber: { type: ["string", "null"] }
         identityDocumentPath: { type: ["string", "null"] }
         businessDocumentPath: { type: ["string", "null"] }
@@ -750,12 +875,14 @@ components:
         id: { type: integer }
         legalName: { type: string }
         contactEmail: { type: string, format: email }
+        phone: { type: string }
+        city: { type: string }
         organisationName: { type: string }
         accountType: { type: string, enum: [individual, business] }
         registrationNumber: { type: ["string", "null"] }
         identityDocumentPath: { type: ["string", "null"] }
         businessDocumentPath: { type: ["string", "null"] }
-        status: { type: string, enum: [pending, approved, rejected, suspended] }
+        status: { type: string, enum: [pending, more_information_required, approved, rejected, suspended] }
         paymentStatus: { type: string, enum: [pending, paid, waived] }
         reviewNote: { type: ["string", "null"] }
         createdAt: { type: string, format: date-time }
@@ -773,7 +900,7 @@ components:
           items: { $ref: "#/components/schemas/OrganiserEvent" }
     EventInput:
       type: object
-      required: [title, description, city, venue, startsAt, category, imageUrl, authenticityAccepted, ticketCategories, submitForReview]
+      required: [title, description, city, venue, startsAt, category, imageUrl, authenticityAccepted, organiserTermsAccepted, ticketCategories, submitForReview]
       properties:
         title: { type: string, minLength: 4, maxLength: 120 }
         description: { type: string, minLength: 20, maxLength: 8000 }
@@ -782,7 +909,8 @@ components:
         startsAt: { type: string, format: date-time }
         category: { type: string }
         imageUrl: { type: ["string", "null"] }
-        authenticityAccepted: { type: boolean, const: true }
+        authenticityAccepted: { type: boolean }
+        organiserTermsAccepted: { type: boolean }
         submitForReview: { type: boolean }
         ticketCategories:
           type: array
@@ -819,6 +947,31 @@ components:
         attendees:
           type: array
           items: { $ref: "#/components/schemas/Attendee" }
+    EventCommunicationInput:
+      type: object
+      required: [category, audience, subject, content]
+      properties:
+        category: { type: string, enum: [Ticket confirmation, Event announcement, Venue changes, Event postponement, Event cancellation, Event-day reminders, General customer communication, Marketing update] }
+        audience: { type: string, enum: [All ticket holders, VIP ticket holders, General ticket holders, Specific customers] }
+        customerIds:
+          type: array
+          items: { type: string, format: uuid }
+        subject: { type: string, minLength: 1, maxLength: 200 }
+        content: { type: string, minLength: 1, maxLength: 10000 }
+    EventCommunication:
+      type: object
+      required: [id, eventId, category, audience, subject, content, recipientCount, transactional, status, createdAt]
+      properties:
+        id: { type: integer }
+        eventId: { type: integer }
+        category: { type: string }
+        audience: { type: string }
+        subject: { type: string }
+        content: { type: string }
+        recipientCount: { type: integer }
+        transactional: { type: boolean }
+        status: { type: string, enum: [queued, sending, sent, failed] }
+        createdAt: { type: string, format: date-time }
     StaffAssignmentInput:
       type: object
       required: [email]
@@ -890,10 +1043,11 @@ components:
         currency: { type: string, enum: [ZAR] }
     OnboardingPaymentUpdateInput:
       type: object
-      required: [status, reconciliationNote]
+      required: [status, reconciliationReference]
       properties:
         status: { type: string, enum: [pending, paid, waived] }
-        reconciliationNote: { type: string, minLength: 3, maxLength: 1000 }
+        reconciliationReference: { type: string, minLength: 3, maxLength: 160 }
+        note: { type: string, maxLength: 1000 }
     AuditLog:
       type: object
       required: [id, actorId, action, entityType, entityId, createdAt]
@@ -918,7 +1072,7 @@ components:
       type: object
       required: [decision, reviewNote]
       properties:
-        decision: { type: string, enum: [approve, reject, suspend] }
+        decision: { type: string, enum: [approve, reject, suspend, request_information] }
         reviewNote: { type: string, maxLength: 2000 }
     AdminEvent:
       allOf:
@@ -928,12 +1082,12 @@ components:
           properties:
             organiserId: { type: string }
             organiserName: { type: string }
-            status: { type: string, enum: [draft, pending, approved, rejected, suspended] }
+            status: { type: string, enum: [draft, pending, more_information_required, approved, published, rejected, suspended, completed, cancelled] }
     EventDecisionInput:
       type: object
       required: [decision, reviewNote]
       properties:
-        decision: { type: string, enum: [approve, reject, suspend] }
+        decision: { type: string, enum: [approve, publish, reject, request_information, suspend, restore] }
         reviewNote: { type: string, maxLength: 2000 }
     CheckoutInput:
       type: object

@@ -24,7 +24,8 @@ export interface EventInput {
   category: string;
   /** @nullable */
   imageUrl: string | null;
-  authenticityAccepted: true;
+  authenticityAccepted: boolean;
+  organiserTermsAccepted: boolean;
   submitForReview: boolean;
   /** @minItems 1 */
   ticketCategories: TicketCategoryInput[];

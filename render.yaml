@@ -1,0 +1,73 @@
+# =============================================================================
+# Mzansi Event Hub (Out There ZA) - Render Blueprint
+# =============================================================================
+# Deploy both the API server and the frontend static site to Render.
+#
+# Usage:
+#   1. Push this repo to GitHub/GitLab.
+#   2. In Render dashboard, create a new "Blueprint" and point it at your repo.
+#   3. Render reads this file and provisions the services.
+#   4. Fill in the secret env vars (RESEND_API_KEY, SESSION_SECRET, etc.) in the
+#      Render dashboard after the services are created.
+#   5. Create a PostgreSQL database in Render and copy its Internal Database URL
+#      into the DATABASE_URL env var of the api service.
+#
+# For the frontend, Render serves the static dist/ folder and proxies /api to
+# the backend via a rewrite rule (configured in render.yaml).
+# =============================================================================
+
+services:
+  # --- API Server (Node.js + Express) ---
+  - type: web
+    name: mzansi-api
+    runtime: node
+    plan: free
+    rootDir: artifacts/api-server
+    buildCommand: pnpm install --no-frozen-lockfile && pnpm run build
+    startCommand: pnpm run start
+    healthCheckPath: /api/healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: ADMIN_BOOTSTRAP_TOKEN
+        sync: false
+      - key: PAYFAST_ENCRYPTION_SECRET
+        sync: false
+      - key: PAYFAST_NOTIFY_URL
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        value: Out There ZA <onboarding@resend.dev>
+      - key: WEB_ORIGIN
+        sync: false
+      - key: PRIVATE_DOCUMENTS_DIR
+        value: /var/data/private-documents
+    disk:
+      name: mzansi-documents
+      mountPath: /var/data
+      sizeGB: 1
+
+  # --- Frontend (Static Site) ---
+  - type: web
+    name: mzansi-frontend
+    runtime: node
+    plan: free
+    rootDir: artifacts/sa-ticketing
+    buildCommand: pnpm install --no-frozen-lockfile && pnpm run build
+    startCommand: pnpm run preview
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://mzansi-api.onrender.com/api/:splat

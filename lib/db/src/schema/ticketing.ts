@@ -17,9 +17,23 @@ export const usersTable = pgTable("ticketing_users", {
   id: text("id").primaryKey(),
   email: text("email").notNull(),
   name: text("name").notNull(),
+  phone: text("phone"),
+  marketingConsent: boolean("marketing_consent").notNull().default(false),
+  passwordHash: text("password_hash"),
   role: text("role").notNull().default("customer"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [uniqueIndex("ticketing_users_email_unique").on(table.email)]);
+
+export const sessionsTable = pgTable(
+  "ticketing_sessions",
+  {
+    tokenHash: text("token_hash").primaryKey(),
+    userId: text("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("ticketing_sessions_user_idx").on(table.userId)],
+);
 
 export const organiserApplicationsTable = pgTable(
   "organiser_applications",
@@ -31,6 +45,7 @@ export const organiserApplicationsTable = pgTable(
     contactEmail: text("contact_email").notNull(),
     phone: text("phone").notNull(),
     organisationName: text("organisation_name").notNull(),
+    city: text("city").notNull().default(""),
     registrationNumber: text("registration_number"),
     identityDocumentPath: text("identity_document_path"),
     businessDocumentPath: text("business_document_path"),
@@ -47,6 +62,18 @@ export const organiserApplicationsTable = pgTable(
   ],
 );
 
+export const organiserApplicationMessagesTable = pgTable(
+  "organiser_application_messages",
+  {
+    id: serial("id").primaryKey(),
+    applicationId: integer("application_id").notNull().references(() => organiserApplicationsTable.id, { onDelete: "cascade" }),
+    senderId: text("sender_id").notNull().references(() => usersTable.id, { onDelete: "restrict" }),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("organiser_application_messages_application_idx").on(table.applicationId, table.createdAt)],
+);
+
 export const eventsTable = pgTable(
   "ticketing_events",
   {
@@ -59,7 +86,10 @@ export const eventsTable = pgTable(
     startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
     category: text("category").notNull(),
     imageUrl: text("image_url"),
+    authenticityAccepted: boolean("authenticity_accepted").notNull().default(false),
+    organiserTermsAccepted: boolean("organiser_terms_accepted").notNull().default(false),
     status: text("status").notNull().default("draft"),
+    statusBeforeSuspension: text("status_before_suspension"),
     reviewNote: text("review_note"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
@@ -154,6 +184,21 @@ export const ticketsTable = pgTable(
   ],
 );
 
+export const ticketDeliveriesTable = pgTable(
+  "ticket_deliveries",
+  {
+    id: serial("id").primaryKey(),
+    ticketId: integer("ticket_id").notNull().references(() => ticketsTable.id, { onDelete: "cascade" }),
+    recipient: text("recipient").notNull(),
+    provider: text("provider").notNull().default("resend"),
+    providerMessageId: text("provider_message_id"),
+    status: text("status").notNull(),
+    error: text("error"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("ticket_deliveries_ticket_created_idx").on(table.ticketId, table.createdAt)],
+);
+
 export const eventStaffTable = pgTable(
   "ticketing_event_staff",
   {
@@ -192,6 +237,25 @@ export const eventReportsTable = pgTable(
   (table) => [index("event_reports_status_idx").on(table.status)],
 );
 
+export const eventCommunicationsTable = pgTable(
+  "event_communications",
+  {
+    id: serial("id").primaryKey(),
+    eventId: integer("event_id").notNull().references(() => eventsTable.id, { onDelete: "cascade" }),
+    senderId: text("sender_id").notNull().references(() => usersTable.id, { onDelete: "restrict" }),
+    category: text("category").notNull(),
+    audience: text("audience").notNull(),
+    subject: text("subject").notNull(),
+    content: text("content").notNull(),
+    recipients: jsonb("recipients").$type<Array<{ userId: string; email: string; name: string; ticketCategory: string; deliveryStatus?: string; providerMessageId?: string; error?: string }> | null>(),
+    recipientCount: integer("recipient_count").notNull().default(0),
+    transactional: boolean("transactional").notNull().default(false),
+    status: text("status").notNull().default("queued"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("event_communications_event_idx").on(table.eventId, table.createdAt)],
+);
+
 export const verificationDocumentsTable = pgTable(
   "verification_documents",
   {
@@ -223,4 +287,35 @@ export const auditLogsTable = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("ticketing_audit_logs_created_idx").on(table.createdAt)],
+);
+
+export const passwordResetsTable = pgTable(
+  "ticketing_password_resets",
+  {
+    tokenHash: text("token_hash").primaryKey(),
+    userId: text("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("ticketing_password_resets_user_idx").on(table.userId)],
+);
+
+export const emailOutboxTable = pgTable(
+  "ticketing_email_outbox",
+  {
+    id: serial("id").primaryKey(),
+    recipient: text("recipient").notNull(),
+    subject: text("subject").notNull(),
+    html: text("html").notNull(),
+    status: text("status").notNull().default("pending"),
+    provider: text("provider").notNull().default("resend"),
+    providerMessageId: text("provider_message_id"),
+    error: text("error"),
+    entityType: text("entity_type"),
+    entityId: text("entity_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+  },
+  (table) => [index("ticketing_email_outbox_created_idx").on(table.createdAt)],
 );
