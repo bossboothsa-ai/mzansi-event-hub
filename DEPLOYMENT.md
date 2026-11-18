@@ -197,10 +197,10 @@ The production deployment is a **single Node web service** that serves both the 
    |---------|-------|
    | Runtime | Node |
    | Build Command | `pnpm install --frozen-lockfile && pnpm run build` |
-   | Start Command | `pnpm --filter @workspace/db run push-force && pnpm run start` |
+   | Start Command | `pnpm run start` |
    | Health Check Path | `/api/healthz` |
 
-   The `push-force` step runs `drizzle-kit push --force`, which is **idempotent** — it creates the tables on a fresh database and is a fast no-op on every subsequent deploy/restart. This means you do **not** need to apply the schema manually.
+   The `pnpm run start` script now **auto-applies the DB schema** (it runs `pnpm --filter @workspace/db run push-force` before booting the server). This is **idempotent** — it creates the tables on a fresh database and is a fast no-op on every subsequent deploy/restart. You do **not** need to apply the schema manually.
 
 3. Add the environment variables:
 

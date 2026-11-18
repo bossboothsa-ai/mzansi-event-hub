@@ -12,14 +12,14 @@
 #   3. New -> Blueprint -> connect the repo (Render reads this file), OR
 #      New -> Web Service -> point at the repo with these settings:
 #        Build Command: pnpm install --frozen-lockfile && pnpm run build
-#        Start Command: pnpm --filter @workspace/db run push-force && pnpm run start
+#        Start Command: pnpm run start
 #   4. Fill in the secret env vars (marked sync:false) in the Render dashboard.
-#   5. The DB schema is applied automatically on start (drizzle-kit push --force,
+#   5. The DB schema is applied automatically on start (the root `start` script
+#      runs `pnpm --filter @workspace/db run push-force` before booting the server;
 #      idempotent). No manual shell step is required.
 #   6. Bootstrap the first admin (see DEPLOYMENT.md section 4.5).
 #
-# Node version is pinned via the root package.json "engines" field (24.x) and
-# enforced with .npmrc (engine-strict=true), so Render installs a matching Node.
+# Node version is pinned via the root package.json "engines" field (>=22).
 # =============================================================================
 
 services:
@@ -28,8 +28,8 @@ services:
     runtime: node
     plan: free
     buildCommand: pnpm install --frozen-lockfile && pnpm run build
-    # Self-provisioning: apply the (idempotent) DB schema, then boot the server.
-    startCommand: pnpm --filter @workspace/db run push-force && pnpm run start
+    # Schema auto-applied via root `start` script (runs push-force before server boot).
+    startCommand: pnpm run start
     healthCheckPath: /api/healthz
     envVars:
       - key: NODE_ENV
