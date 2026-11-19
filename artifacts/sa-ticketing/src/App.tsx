@@ -72,38 +72,10 @@ const notify = (message: string) => { setToast(message); window.setTimeout(() =>
   const checkoutCategoryId = Number(checkoutParams.get('category')) || 0;
   const selectedEvent = events.find(e => e.id === (eventId || checkoutId)) ?? events[0];
   const category = path.startsWith('/category/') ? decodeURIComponent(path.split('/')[2]) : '';
-  if ((path.startsWith('/admin') || path.startsWith('/organiser') || path.startsWith('/staff')) && !signedIn && !authLoading) return <PublicShell go={go} signedIn={signedIn} account={account}><SignInPage go={go} onSignIn={handleSignIn}/></PublicShell>;
+if ((path.startsWith('/admin') || path.startsWith('/organiser') || path.startsWith('/staff')) && !signedIn && !authLoading) return <PublicShell go={go} signedIn={signedIn} account={account}><SignInPage go={go} onSignIn={handleSignIn}/></PublicShell>;
   if (path.startsWith('/staff') && !authLoading && !['event_staff','organiser','admin'].includes(account?.role ?? '')) return <PublicShell go={go} signedIn={signedIn} account={account}><main className="narrow-page"><h1>Event staff access required</h1><p className="lead-proto">Sign in with an account assigned to this event.</p><button className="btn-outline" onClick={()=>go('/')}>Back to marketplace</button></main></PublicShell>;
   if (path.startsWith('/admin') && !authLoading && account?.role !== 'admin') return <PublicShell go={go} signedIn={signedIn} account={account}><main className="narrow-page"><h1>Administrator access required</h1><p className="lead-proto">Sign in with an authorised platform administrator account.</p><button className="btn-outline" onClick={()=>go('/')}>Back to marketplace</button></main></PublicShell>;
-  if (path.startsWith('/organiser') && !['organiser','admin'].includes(account?.role ?? '') && path !== '/organiser/apply' && path !== '/organiser/verification') {
-    const status = account?.organiserStatus ?? 'not_started';
-    const gate: Record<string, { title: string; description: string; primary: { label: string; href: string }; secondary?: { label: string; href: string } }> = {
-      pending: {
-        title: 'Awaiting approval',
-        description: 'Your organiser application has been submitted and is under review. You can track its progress and message the review team.',
-        primary: { label: 'View application status', href: '/organiser/verification' },
-      },
-      more_information_required: {
-        title: 'More information needed',
-        description: 'The review team needs additional details before your application can be approved. Update your application to continue.',
-        primary: { label: 'Update application', href: '/organiser/apply' },
-      },
-      rejected: {
-        title: 'Application not approved',
-        description: 'Your organiser application was not approved. Review the decision and submit a new application if you wish to reapply.',
-        primary: { label: 'View decision', href: '/organiser/verification' },
-        secondary: { label: 'Resubmit application', href: '/organiser/apply' },
-      },
-      not_started: {
-        title: 'Organiser access pending',
-        description: 'Submit your organiser application and wait for approval before managing events.',
-        primary: { label: 'Start application', href: '/organiser/apply' },
-      },
-    };
-    const view = gate[status] ?? gate.not_started;
-    const secondary = view.secondary;
-    return <PublicShell go={go} signedIn={signedIn} account={account}><main className="narrow-page"><h1>{view.title}</h1><p className="lead-proto">{view.description}</p><button className="btn-purple" onClick={()=>go(view.primary.href)}>{view.primary.label} <ArrowRight size={16}/></button>{secondary && <button className="btn-outline" style={{marginTop:12}} onClick={()=>go(secondary.href)}>{secondary.label} <ArrowRight size={16}/></button>}</main></PublicShell>;
-  }
+  if (path.startsWith('/organiser') && !authLoading && account?.role !== 'organiser' && path !== '/organiser/apply' && path !== '/organiser/verification') return <PublicShell go={go} signedIn={signedIn} account={account}><main className="narrow-page"><h1>Organiser access required</h1><p className="lead-proto">Sign in with an approved organiser account.</p><button className="btn-outline" onClick={()=>go('/')}>Back to marketplace</button></main></PublicShell>;
   if ((path.startsWith('/events/') || path.startsWith('/checkout')) && !events.length) return <PublicShell go={go} signedIn={signedIn} account={account}><main className="narrow-page"><h1>Events are loading</h1><p className="lead-proto">The marketplace will show events after they are published.</p><button className="btn-outline" onClick={()=>go('/')}>Back to marketplace</button></main></PublicShell>;
 
   if (path === '/organiser/events') return <PortalShell kind="organiser" path={path} go={go} userName={account?.name} organisationName={currentOrg}><OrganiserEventList currentOrg={currentOrg} events={events} go={go}/></PortalShell>;

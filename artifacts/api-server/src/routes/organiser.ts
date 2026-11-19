@@ -6,7 +6,7 @@ import { raw } from "express";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, auditLogsTable, eventCommunicationsTable, eventsTable, onboardingFeeSettingsTable, organiserApplicationMessagesTable, organiserApplicationsTable, organiserPaymentSettingsTable, ordersTable, ticketCategoriesTable, usersTable, verificationDocumentsTable } from "@workspace/db";
-import { requireRole, requireUser, type Account } from "../lib/auth";
+import { requireRole, type Account } from "../lib/auth";
 import { serializeEvent } from "../lib/events";
 import { EmailConfigurationError, deliverEmail, escapeHtml } from "../lib/email";
 import { applicationDecisionEmail, onboardingPaymentConfirmedEmail } from "../lib/email-templates";
@@ -33,7 +33,7 @@ const eventInput = z.object({
 
 async function getEvent(eventId: number) { return serializeEvent(eventId); }
 
-router.get("/organiser/application", requireUser, async (_req, res, next) => {
+router.get("/organiser/application", requireRole("organiser"), async (_req, res, next) => {
   try {
     const account = res.locals.account as Account;
     const [application] = await db.select().from(organiserApplicationsTable).where(eq(organiserApplicationsTable.userId, account.id)).limit(1);
@@ -42,14 +42,14 @@ router.get("/organiser/application", requireUser, async (_req, res, next) => {
   } catch (error) { next(error); }
 });
 
-router.get("/organiser/onboarding-fee", requireUser, async (_req, res, next) => {
+router.get("/organiser/onboarding-fee", requireRole("organiser"), async (_req, res, next) => {
   try {
     const [fee] = await db.select().from(onboardingFeeSettingsTable).where(eq(onboardingFeeSettingsTable.key, "organiser_onboarding_fee")).limit(1);
     res.json({ amount: fee?.amount ?? 0, currency: "ZAR", cadence: "once_off" });
   } catch (error) { next(error); }
 });
 
-router.get("/organiser/application/messages", requireUser, async (_req, res, next) => {
+router.get("/organiser/application/messages", requireRole("organiser"), async (_req, res, next) => {
   try {
     const account = res.locals.account as Account;
     const [application] = await db.select({ id: organiserApplicationsTable.id }).from(organiserApplicationsTable).where(eq(organiserApplicationsTable.userId, account.id)).limit(1);
@@ -59,7 +59,7 @@ router.get("/organiser/application/messages", requireUser, async (_req, res, nex
   } catch (error) { next(error); }
 });
 
-router.post("/organiser/application/messages", requireUser, async (req, res, next) => {
+router.post("/organiser/application/messages", requireRole("organiser"), async (req, res, next) => {
   try {
     const body = z.object({ content: z.string().trim().min(1).max(4000) }).parse(req.body);
     const account = res.locals.account as Account;
@@ -101,7 +101,7 @@ router.get("/admin/application-messages", requireRole("admin"), async (_req, res
   } catch (error) { next(error); }
 });
 
-router.post("/organiser/application", requireUser, async (req, res, next) => {
+router.post("/organiser/application", requireRole("organiser"), async (req, res, next) => {
   try {
     const body = z.object({ accountType: z.enum(["individual", "business"]), legalName: z.string().trim().min(2).max(160), contactEmail: z.string().email(), phone: z.string().min(7).max(40), organisationName: z.string().trim().min(2).max(160), city: z.string().trim().min(2).max(100), registrationNumber: z.string().nullable(), identityDocumentPath: z.string().uuid().nullable().optional(), businessDocumentPath: z.string().uuid().nullable().optional(), authenticityAccepted: z.literal(true), agreementAccepted: z.literal(true) }).parse(req.body);
     const account = res.locals.account as Account;
@@ -117,7 +117,7 @@ router.post("/organiser/application", requireUser, async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
-router.post("/organiser/documents", requireUser, raw({ type: documentTypes, limit: "10mb" }), async (req, res, next) => {
+router.post("/organiser/documents", requireRole("organiser"), raw({ type: documentTypes, limit: "10mb" }), async (req, res, next) => {
   try {
     const account = res.locals.account as Account;
     const kind = z.enum(["identity", "business"]).parse(req.query.kind);
