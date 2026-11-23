@@ -1,7 +1,22 @@
 import { useLocation } from 'wouter';
-import { CustomerApp } from '@/portals/customer/CustomerApp';
-import { OrganizerApp } from '@/portals/organizer/OrganizerApp';
-import { AdminApp } from '@/portals/admin/AdminApp';
+import { lazy, Suspense, useState, useEffect } from 'react';
+import { ErrorBoundary } from '@/components/error-boundary';
+
+// Lazy-load portals to isolate failures and reduce initial bundle
+const CustomerApp = lazy(() => import('@/portals/customer/CustomerApp').then(m => ({ default: m.CustomerApp })));
+const OrganizerApp = lazy(() => import('@/portals/organizer/OrganizerApp').then(m => ({ default: m.OrganizerApp })));
+const AdminApp = lazy(() => import('@/portals/admin/AdminApp').then(m => ({ default: m.AdminApp })));
+
+function PortalFallback({ portalName }: { portalName: string }) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="text-center p-8">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-violet-500 border-t-transparent mx-auto mb-4" />
+        <p className="text-gray-600">Loading {portalName}…</p>
+      </div>
+    </div>
+  );
+}
 
 function LandingPage() {
   return (
@@ -43,19 +58,50 @@ function LandingPage() {
 
 export function App() {
   const [path] = useLocation();
+  const [mounted, setMounted] = useState(false);
 
-  // Portal routing
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-violet-500 border-t-transparent" />
+      </div>
+    );
+  }
+
+  // Portal routing with error boundaries + lazy loading
   if (path.startsWith('/customer')) {
-    return <CustomerApp />;
-  }
-  if (path.startsWith('/organizer')) {
-    return <OrganizerApp />;
-  }
-  if (path.startsWith('/admin')) {
-    return <AdminApp />;
+    return (
+      <ErrorBoundary resetKey={path}>
+        <Suspense fallback={<PortalFallback portalName="Customer Portal" />}>
+          <CustomerApp />
+        </Suspense>
+      </ErrorBoundary>
+    );
   }
 
-  // Default: landing page
+  if (path.startsWith('/organizer')) {
+    return (
+      <ErrorBoundary resetKey={path}>
+        <Suspense fallback={<PortalFallback portalName="Organiser Portal" />}>
+          <OrganizerApp />
+        </Suspense>
+      </ErrorBoundary>
+    );
+  }
+
+  if (path.startsWith('/admin')) {
+    return (
+      <ErrorBoundary resetKey={path}>
+        <Suspense fallback={<PortalFallback portalName="Admin Portal" />}>
+          <AdminApp />
+        </Suspense>
+      </ErrorBoundary>
+    );
+  }
+
+  // Default: landing page (no portal chrome, no auth, no suspense)
   return <LandingPage />;
 }
 
