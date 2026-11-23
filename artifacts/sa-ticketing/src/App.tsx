@@ -3,54 +3,48 @@ import { CustomerApp } from '@/portals/customer/CustomerApp';
 import { OrganizerApp } from '@/portals/organizer/OrganizerApp';
 import { AdminApp } from '@/portals/admin/AdminApp';
 
-function PublicShell({ children }: { children: React.ReactNode }) {
+function LandingPage() {
   return (
-    <div className="public-shell">
-      {children}
-    </div>
-  );
-}
+    <main className="landing-page">
+      <header className="landing-header">
+        <span className="brand-wordmark">out<span>there</span><i>ZA</i></span>
+      </header>
 
-function PublicHomePage() {
-  return (
-    <PublicShell>
-      <main className="public-home">
-        <section className="hero">
-          <div className="hero-content">
-            <span className="eyebrow">OUT THERE ZA</span>
-            <h1>Three portals.<br /><em>One platform.</em></h1>
-            <p>Choose your entry point to access the right experience for you.</p>
-          </div>
-          <div className="portal-cards">
-            <a href="/customer" className="portal-card customer">
-              <div className="card-icon">🎫</div>
-              <h3>Customer Portal</h3>
-              <p>Discover events, buy tickets, manage your bookings.</p>
-              <span className="card-cta">Enter <span aria-hidden="true">→</span></span>
-            </a>
-            <a href="/organizer" className="portal-card organizer">
-              <div className="card-icon">🎭</div>
-              <h3>Organizer Portal</h3>
-              <p>Create events, manage tickets, track sales.</p>
-              <span className="card-cta">Enter <span aria-hidden="true">→</span></span>
-            </a>
-            <a href="/admin" className="portal-card admin">
-              <div className="card-icon">🛡️</div>
-              <h3>Admin Portal</h3>
-              <p>Platform administration and control centre.</p>
-              <span className="card-cta">Enter <span aria-hidden="true">→</span></span>
-            </a>
-          </div>
-        </section>
-      </main>
-    </PublicShell>
+      <section className="landing-hero">
+        <div className="hero-content">
+          <span className="eyebrow">OUT THERE ZA</span>
+          <h1>South Africa's<br /><em>event marketplace.</em></h1>
+          <p>Discover live events across the country or create your own. Tickets, check-in, payouts — all in one platform.</p>
+        </div>
+        <div className="hero-image" />
+      </section>
+
+      <section className="landing-cta">
+        <a href="/customer/login" className="cta-card customer">
+          <div className="cta-icon">🎫</div>
+          <h3>Buy Tickets</h3>
+          <p>Browse events, purchase securely, get instant QR tickets.</p>
+          <span className="cta-arrow">Enter as Customer →</span>
+        </a>
+        <a href="/organizer/login" className="cta-card organizer">
+          <div className="cta-icon">🎭</div>
+          <h3>Create Events</h3>
+          <p>Organise, sell tickets, manage attendees, get paid.</p>
+          <span className="cta-arrow">Enter as Organiser →</span>
+        </a>
+      </section>
+
+      <footer className="landing-footer">
+        <p>Platform administration: <a href="/admin">/admin</a></p>
+      </footer>
+    </main>
   );
 }
 
 export function App() {
   const [path] = useLocation();
 
-  // Route to appropriate portal based on URL prefix
+  // Portal routing
   if (path.startsWith('/customer')) {
     return <CustomerApp />;
   }
@@ -61,8 +55,8 @@ export function App() {
     return <AdminApp />;
   }
 
-  // Default: public landing page with portal selection
-  return <PublicHomePage />;
+  // Default: landing page
+  return <LandingPage />;
 }
 
 export default App;
