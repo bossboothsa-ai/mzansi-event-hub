@@ -1337,7 +1337,7 @@
 .action-buttons { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
 
 /* =============================================================================
-   LANDING PAGE
+   LANDING PAGE — fully isolated, no portal chrome
    ============================================================================= */
 .landing-page {
   min-height: 100vh;
@@ -1346,6 +1346,27 @@
   background: #f7f8fb;
   font-size: 14px;
 }
+
+/* Explicitly suppress any portal chrome that might leak */
+.landing-page header,
+.landing-page nav,
+.landing-page .customer-header,
+.landing-page .organizer-header,
+.landing-page .admin-header,
+.landing-page .customer-nav,
+.landing-page .organizer-nav,
+.landing-page .admin-nav,
+.landing-page .portal-nav,
+.landing-page .pub-nav,
+.landing-page .portal-sidebar,
+.landing-page .sidebar-foot,
+.landing-page .pub-footer,
+.landing-page .proto { display: none !important; }
+
+/* Defensive: suppress any table/bar that might render as "menu table bar" */
+.landing-page table,
+.landing-page .table-container,
+.landing-page .event-table { display: none !important; }
 
 .landing-header {
   display: flex;
