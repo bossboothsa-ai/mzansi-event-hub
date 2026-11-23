@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { CalendarDays, Menu, X, TicketCheck, User, LogOut, ShieldCheck, Plus, Users, Ticket, BarChart3, Settings2, LifeBuoy, CreditCard, FileText, Bell, LogOut as LogOutIcon, ArrowLeft, ArrowRight, ShieldCheck as ShieldCheckIcon, CalendarDays as CalendarDaysIcon, Plus as PlusIcon, Ticket as TicketIcon, Users as UsersIcon, BarChart3 as BarChart3Icon, Settings2 as Settings2Icon, LifeBuoy as LifeBuoyIcon, CreditCard as CreditCardIcon, FileText as FileTextIcon, Bell as BellIcon, ShieldCheck as ShieldCheckIcon2, Clock3 } from 'lucide-react';
+import { CalendarDays, Menu, X, TicketCheck, User, LogOut, ShieldCheck, Plus, Users, Ticket, BarChart3, Settings2, LifeBuoy, CreditCard, FileText, Bell, LogOut as LogOutIcon, ArrowLeft, ArrowRight, ShieldCheck as ShieldCheckIcon, CalendarDays as CalendarDaysIcon, Plus as PlusIcon, Ticket as TicketIcon, Users as UsersIcon, BarChart3 as BarChart3Icon, Settings2 as Settings2Icon, LifeBuoy as LifeBuoyIcon, CreditCard as CreditCardIcon, FileText as FileTextIcon, Bell as BellIcon, ShieldCheck as ShieldCheckIcon2, Clock3, Mail, Shield, Wallet, Activity, Settings } from 'lucide-react';
 import { useAuth } from '@/portals/shared/hooks/useAuth';
 import { api } from '@/portals/shared/api';
 import type { OrganiserEvent, OrganiserDashboardData, OrganiserApplication } from '@/portals/shared/types';
@@ -487,29 +487,301 @@ export function OrganizerVerificationPage() {
 }
 
 export function OrganizerSettingsPage() {
-  return <div className="organizer-settings"><div className="page-heading"><h1>Settings</h1><p>Manage your organiser account settings.</p></div></div>;
+  const { account, isAuthorized } = useAuth();
+  const [formData, setFormData] = useState({
+    name: account?.name || '',
+    email: account?.email || '',
+    phone: '',
+    marketingConsent: false,
+  });
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    setFormData({ ...formData, [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true); setSaved(false);
+    // TODO: API call
+    await new Promise(r => setTimeout(r, 500));
+    setBusy(false); setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  };
+
+  return (
+    <OrganizerLayout>
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">ACCOUNT SETTINGS</span>
+          <h1>Settings</h1>
+          <p>Manage your organiser account and preferences.</p>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="settings-form">
+        <section className="form-section">
+          <h3>Profile</h3>
+          <label>Full name<input name="name" value={formData.name} onChange={handleChange} required /></label>
+          <label>Email<input type="email" name="email" value={formData.email} onChange={handleChange} required /></label>
+          <label>Phone<input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="+27" /></label>
+        </section>
+
+        <section className="form-section">
+          <h3>Preferences</h3>
+          <label className="checkbox-label">
+            <input type="checkbox" name="marketingConsent" checked={formData.marketingConsent} onChange={handleChange} />
+            <span>Receive marketing emails and platform updates</span>
+          </label>
+        </section>
+
+        {saved && <div className="form-success">Settings saved successfully!</div>}
+
+        <div className="form-actions">
+          <button type="submit" className="btn-primary wide" disabled={busy}>{busy ? 'Saving…' : 'Save Changes'}</button>
+        </div>
+      </form>
+    </OrganizerLayout>
+  );
 }
 
 export function OrganizerPaymentsPage() {
-  return <div className="organizer-payments"><div className="page-heading"><h1>PayFast Settings</h1><p>Configure your payment settings.</p></div></div>;
+  const { isAuthorized } = useAuth();
+  const [config, setConfig] = useState<{
+    sandboxMerchantId: string;
+    sandboxMerchantKey: string;
+    sandboxPassphrase: string;
+    liveMerchantId: string;
+    liveMerchantKey: string;
+    livePassphrase: string;
+    environment: 'sandbox' | 'live';
+  }>({
+    sandboxMerchantId: '', sandboxMerchantKey: '', sandboxPassphrase: '',
+    liveMerchantId: '', liveMerchantKey: '', livePassphrase: '',
+    environment: 'sandbox',
+  });
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setConfig({ ...config, [name]: value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true); setSaved(false);
+    // TODO: API call
+    await new Promise(r => setTimeout(r, 500));
+    setBusy(false); setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  };
+
+  return (
+    <OrganizerLayout>
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">PAYMENT SETTINGS</span>
+          <h1>PayFast Configuration</h1>
+          <p>Configure your PayFast credentials for ticket payments.</p>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="payments-form">
+        <div className="env-tabs">
+          <button type="button" className={config.environment === 'sandbox' ? 'active' : ''} onClick={() => setConfig({ ...config, environment: 'sandbox' })}>Sandbox (Testing)</button>
+          <button type="button" className={config.environment === 'live' ? 'active' : ''} onClick={() => setConfig({ ...config, environment: 'live' })}>Live (Production)</button>
+        </div>
+
+        <section className="form-section">
+          <h3>{config.environment === 'sandbox' ? 'Sandbox' : 'Live'} Credentials</h3>
+          <label>Merchant ID<input name={config.environment === 'sandbox' ? 'sandboxMerchantId' : 'liveMerchantId'} value={config[config.environment === 'sandbox' ? 'sandboxMerchantId' : 'liveMerchantId']} onChange={handleChange} placeholder="10000100" /></label>
+          <label>Merchant Key<input name={config.environment === 'sandbox' ? 'sandboxMerchantKey' : 'liveMerchantKey'} value={config[config.environment === 'sandbox' ? 'sandboxMerchantKey' : 'liveMerchantKey']} onChange={handleChange} placeholder="46f0cd69..." /></label>
+          <label>Passphrase<input type="password" name={config.environment === 'sandbox' ? 'sandboxPassphrase' : 'livePassphrase'} value={config[config.environment === 'sandbox' ? 'sandboxPassphrase' : 'livePassphrase']} onChange={handleChange} placeholder="Optional passphrase" /></label>
+        </section>
+
+        {saved && <div className="form-success">PayFast settings saved!</div>}
+
+        <div className="form-actions">
+          <button type="submit" className="btn-primary wide" disabled={busy}>{busy ? 'Saving…' : 'Save Configuration'}</button>
+        </div>
+      </form>
+    </OrganizerLayout>
+  );
 }
 
 export function OrganizerCommunicationsPage() {
-  return <div className="organizer-communications"><div className="page-heading"><h1>Communications</h1><p>Send messages to your attendees.</p></div></div>;
+  const [, navigate] = useLocation();
+  const [messages, setMessages] = useState<Array<{ id: number; subject: string; audience: string; sentAt: string; recipients: number; status: string }>>([]);
+  const [showModal, setShowModal] = useState(false);
+  const [formData, setFormData] = useState({ subject: '', message: '', audience: 'all' });
+
+  const sendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    // TODO: API call
+    await new Promise(r => setTimeout(r, 500));
+    setMessages([{ id: Date.now(), subject: formData.subject, audience: formData.audience, sentAt: new Date().toISOString(), recipients: 10, status: 'sent' }, ...messages]);
+    setShowModal(false);
+    setFormData({ subject: '', message: '', audience: 'all' });
+  };
+
+  return (
+    <OrganizerLayout>
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">COMMUNICATIONS</span>
+          <h1>Messages</h1>
+          <p>Send messages to your event attendees.</p>
+        </div>
+        <button className="btn-primary" onClick={() => setShowModal(true)}><Plus size={16} /> New Message</button>
+      </div>
+
+      {showModal && (
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h2>New Message</h2>
+            <form onSubmit={sendMessage} className="modal-form">
+              <label>Subject<input name="subject" value={formData.subject} onChange={e => setFormData({ ...formData, subject: e.target.value })} placeholder="Your message subject" required /></label>
+              <label>Audience<select name="audience" value={formData.audience} onChange={e => setFormData({ ...formData, audience: e.target.value })}>
+                <option value="all">All attendees</option>
+                <option value="upcoming">Upcoming events</option>
+                <option value="past">Past events</option>
+              </select></label>
+              <label>
+                Message
+                <textarea name="message" value={formData.message} onChange={e => setFormData({ ...formData, message: e.target.value })} rows={6} placeholder="Your message…" required />
+              </label>
+              <div className="modal-actions">
+                <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
+                <button type="submit" className="btn-primary">Send Message</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      <div className="communications-list">
+        {messages.length ? (
+          <table>
+            <thead><tr><th>Subject</th><th>Audience</th><th>Sent</th><th>Recipients</th><th>Status</th></tr></thead>
+            <tbody>
+              {messages.map(m => (
+                <tr key={m.id}>
+                  <td><b>{m.subject}</b></td>
+                  <td>{m.audience}</td>
+                  <td>{new Date(m.sentAt).toLocaleString('en-ZA')}</td>
+                  <td>{m.recipients}</td>
+                  <td><span className={`status status-${m.status}`}>{m.status}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="empty-state">
+            <Mail size={32} />
+            <h3>No messages sent yet</h3>
+            <p>Send your first message to attendees.</p>
+            <button className="btn-primary" onClick={() => setShowModal(true)}><Plus size={16} /> Compose Message</button>
+          </div>
+        )}
+      </div>
+    </OrganizerLayout>
+  );
 }
 
 export function OrganizerTicketsPage() {
-  return <div className="organizer-tickets"><div className="page-heading"><h1>Tickets & Categories</h1><p>Manage ticket types and pricing.</p></div></div>;
+  const [, navigate] = useLocation();
+  return (
+    <OrganizerLayout>
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">TICKETS & CATEGORIES</span>
+          <h1>Ticket Types & Pricing</h1>
+          <p>Manage ticket categories across your events.</p>
+        </div>
+      </div>
+      <div className="empty-state">
+        <Ticket size={32} />
+        <h3>No ticket categories configured yet</h3>
+        <p>Create an event and add ticket categories to get started.</p>
+        <button className="btn-primary" onClick={() => navigate('/organizer/create')}><Plus size={16} /> Create Event</button>
+      </div>
+    </OrganizerLayout>
+  );
 }
 
 export function OrganizerAttendeesPage() {
-  return <div className="organizer-attendees"><div className="page-heading"><h1>Attendees</h1><p>View and manage attendees.</p></div></div>;
+  return (
+    <OrganizerLayout>
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">ATTENDEES</span>
+          <h1>Attendees</h1>
+          <p>View and manage all event attendees.</p>
+        </div>
+      </div>
+      <div className="empty-state">
+        <Users size={32} />
+        <h3>No attendees yet</h3>
+        <p>Attendees will appear here once tickets are sold.</p>
+      </div>
+    </OrganizerLayout>
+  );
 }
 
 export function OrganizerSalesPage() {
-  return <div className="organizer-sales"><div className="page-heading"><h1>Sales & Reports</h1><p>Track your ticket sales and revenue.</p></div></div>;
+  return (
+    <OrganizerLayout>
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">SALES & REPORTS</span>
+          <h1>Sales & Reports</h1>
+          <p>Track your ticket sales and revenue.</p>
+        </div>
+      </div>
+      <div className="empty-state">
+        <BarChart3 size={32} />
+        <h3>No sales data yet</h3>
+        <p>Sales data will appear here once tickets are sold.</p>
+      </div>
+    </OrganizerLayout>
+  );
 }
 
 export function OrganizerHelpPage() {
-  return <div className="organizer-help"><div className="page-heading"><h1>Support</h1><p>Get help with your organiser account.</p></div></div>;
+  return (
+    <OrganizerLayout>
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">SUPPORT</span>
+          <h1>Help & Support</h1>
+          <p>Get help with your organiser account.</p>
+        </div>
+      </div>
+      <div className="help-content">
+        <section className="help-section">
+          <h3>Getting Started</h3>
+          <ul>
+            <li><a href="/organizer/verification">Complete your verification</a></li>
+            <li><a href="/organizer/create">Create your first event</a></li>
+            <li><a href="/organizer/payments">Configure PayFast payments</a></li>
+          </ul>
+        </section>
+        <section className="help-section">
+          <h3>Common Questions</h3>
+          <ul>
+            <li>How do I get paid? Payouts are processed weekly.</li>
+            <li>Can I refund tickets? Yes, from the event sales page.</li>
+            <li>How do I scan tickets? Use the QR scanner in the app.</li>
+          </ul>
+        </section>
+        <section className="help-section">
+          <h3>Contact Support</h3>
+          <p>Email: support@outthereza.com | Response within 24 hours.</p>
+        </section>
+      </div>
+    </OrganizerLayout>
+  );
 }

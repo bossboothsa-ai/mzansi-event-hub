@@ -360,45 +360,210 @@ export function AdminEventsPage() {
 }
 
 export function AdminReportsPage() {
-  return <div className="admin-reports-page"><div className="page-heading"><h1>Reports</h1><p>View and manage customer reports.</p></div></div>;
+  return (
+    <AdminLayout>
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">REPORTS</span>
+          <h1>Reports & Moderation</h1>
+          <p>Review and action customer reports.</p>
+        </div>
+      </div>
+      <div className="empty-state">
+        <Flag size={32} />
+        <h3>No reports</h3>
+        <p>Customer reports will appear here.</p>
+      </div>
+    </AdminLayout>
+  );
 }
 
 export function AdminCustomersPage() {
-  return <div className="admin-customers-page"><div className="page-heading"><h1>Customer Management</h1><p>Manage customer accounts.</p></div></div>;
+  return (
+    <AdminLayout>
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">CUSTOMER MANAGEMENT</span>
+          <h1>Customers</h1>
+          <p>View and manage customer accounts.</p>
+        </div>
+      </div>
+      <div className="empty-state">
+        <Users size={32} />
+        <h3>No customers yet</h3>
+        <p>Customers will appear once they register.</p>
+      </div>
+    </AdminLayout>
+  );
 }
 
 export function AdminSalesPage() {
-  return <div className="admin-sales-page"><div className="page-heading"><h1>Ticket Sales</h1><p>View all ticket sales across the platform.</p></div></div>;
+  return (
+    <AdminLayout>
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">TICKET SALES</span>
+          <h1>Platform Sales</h1>
+          <p>View all ticket sales across the platform.</p>
+        </div>
+      </div>
+      <div className="empty-state">
+        <TicketCheck size={32} />
+        <h3>No sales data</h3>
+        <p>Sales will appear once tickets are sold.</p>
+      </div>
+    </AdminLayout>
+  );
 }
 
 export function AdminTransactionsPage() {
-  return <div className="admin-transactions-page"><div className="page-heading"><h1>Transactions</h1><p>Monitor all platform transactions.</p></div></div>;
+  return (
+    <AdminLayout>
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">TRANSACTIONS</span>
+          <h1>Transactions</h1>
+          <p>Monitor all platform transactions.</p>
+        </div>
+      </div>
+      <div className="empty-state">
+        <Wallet size={32} />
+        <h3>No transactions yet</h3>
+        <p>Transactions will appear here.</p>
+      </div>
+    </AdminLayout>
+  );
 }
 
 export function AdminPayoutsPage() {
-  return <div className="admin-payouts-page"><div className="page-heading"><h1>Commission & Payouts</h1><p>Manage commissions and organiser payouts.</p></div></div>;
+  return (
+    <AdminLayout>
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">COMMISSION & PAYOUTS</span>
+          <h1>Commissions & Payouts</h1>
+          <p>Manage organiser commissions and payouts.</p>
+        </div>
+      </div>
+      <div className="empty-state">
+        <Wallet size={32} />
+        <h3>No payouts yet</h3>
+        <p>Payouts will appear here.</p>
+      </div>
+    </AdminLayout>
+  );
 }
 
 export function AdminDisputesPage() {
-  return <div className="admin-disputes-page"><div className="page-heading"><h1>Refunds & Disputes</h1><p>Handle refunds and payment disputes.</p></div></div>;
+  return (
+    <AdminLayout>
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">REFUNDS & DISPUTES</span>
+          <h1>Refunds & Disputes</h1>
+          <p>Handle refunds and payment disputes.</p>
+        </div>
+      </div>
+      <div className="empty-state">
+        <Flag size={32} />
+        <h3>No disputes</h3>
+        <p>Disputes will appear here.</p>
+      </div>
+    </AdminLayout>
+  );
 }
 
 export function AdminCommunicationsPage() {
-  return <div className="admin-communications-page"><div className="page-heading"><h1>Communications</h1><p>Send platform-wide communications.</p></div></div>;
+  return (
+    <AdminLayout>
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">COMMUNICATIONS</span>
+          <h1>Platform Communications</h1>
+          <p>Send platform-wide communications.</p>
+        </div>
+      </div>
+      <div className="empty-state">
+        <Mail size={32} />
+        <h3>No communications sent</h3>
+        <p>Send your first platform-wide message.</p>
+      </div>
+    </AdminLayout>
+  );
 }
 
 export function AdminEmailsPage() {
-  return <div className="admin-emails-page"><div className="page-heading"><h1>Email Outbox</h1><p>View all emails sent by the platform.</p></div></div>;
+  return (
+    <AdminLayout>
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">EMAIL OUTBOX</span>
+          <h1>Email Outbox</h1>
+          <p>View all emails sent by the platform.</p>
+        </div>
+      </div>
+      <div className="empty-state">
+        <Mail size={32} />
+        <h3>No emails sent yet</h3>
+        <p>Emails will appear here once sent.</p>
+      </div>
+    </AdminLayout>
+  );
 }
 
 export function AdminOnboardingPage() {
-  return <div className="admin-onboarding-page"><div className="page-heading"><h1>Onboarding Payments</h1><p>Track organiser onboarding payments.</p></div></div>;
+  return (
+    <AdminLayout>
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">ONBOARDING PAYMENTS</span>
+          <h1>Onboarding Payments</h1>
+          <p>Track organiser onboarding payments.</p>
+        </div>
+      </div>
+      <div className="empty-state">
+        <Wallet size={32} />
+        <h3>No onboarding payments</h3>
+        <p>Payments will appear here.</p>
+      </div>
+    </AdminLayout>
+  );
 }
 
 export function AdminAuditPage() {
-  return <div className="admin-audit-page"><div className="page-heading"><h1>Audit Logs</h1><p>View platform audit trail.</p></div></div>;
+  return (
+    <AdminLayout>
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">AUDIT LOGS</span>
+          <h1>Audit Trail</h1>
+          <p>View platform audit trail.</p>
+        </div>
+      </div>
+      <div className="empty-state">
+        <Activity size={32} />
+        <h3>No audit logs</h3>
+        <p>Audit entries will appear here.</p>
+      </div>
+    </AdminLayout>
+  );
 }
 
 export function AdminSettingsPage() {
-  return <div className="admin-settings-page"><div className="page-heading"><h1>Platform Settings</h1><p>Configure platform-wide settings.</p></div></div>;
+  return (
+    <AdminLayout>
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">PLATFORM SETTINGS</span>
+          <h1>Platform Settings</h1>
+          <p>Configure platform-wide settings.</p>
+        </div>
+      </div>
+      <div className="empty-state">
+        <Settings size={32} />
+        <h3>Settings coming soon</h3>
+        <p>Platform configuration options.</p>
+      </div>
+    </AdminLayout>
+  );
 }
